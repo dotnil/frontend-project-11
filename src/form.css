@@ -1,0 +1,16 @@
+.feedback {
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.feedback.error {
+  color: red;
+}
+
+.feedback.success {
+  color: green;
+}
+
+.input-error {
+  border: 1px solid red;
+}
