@@ -15,6 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -30,6 +31,7 @@ jobs:
     needs: lint-and-build
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
@@ -37,9 +39,19 @@ jobs:
 
       - run: npm ci
 
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v1
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          organization: ${{ secrets.SONAR_ORG }}
-          token: ${{ secrets.SONAR_TOKEN }}
-          projectKey: ${{ secrets.SONAR_PROJECT_KEY }}
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Run Sonar Scanner
+        run: |
+          npx sonar-scanner \
+            -Dsonar.organization=${{ secrets.SONAR_ORG }} \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.sources=./src \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.exclusions=**/*.js
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
