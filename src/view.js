@@ -24,6 +24,7 @@ const bindFormError = (error, inputEl, feedbackEl) => {
 
 const bindFormSuccess = (isSuccess, inputEl, feedbackEl) => {
   if (isSuccess) {
+    inputEl.classList.remove('input-error')
     feedbackEl.textContent = 'RSS успешно добавлен'
     feedbackEl.className = 'feedback success'
   }
@@ -33,16 +34,12 @@ export default (elements, state) => {
   const { input, feedback, feedList } = elements
 
   const watchedState = onChange(state, (path, value) => {
-    if (path === 'form.error') {
-      bindFormError(value, input, feedback)
-    }
+    if (path === 'form.error') bindFormError(value, input, feedback)
     if (path === 'form.status') {
       if (value === 'success') bindFormSuccess(true, input, feedback)
       if (value === 'idle') bindFormError(null, input, feedback)
     }
-    if (path === 'feeds') {
-      renderFeeds(value, feedList)
-    }
+    if (path === 'feeds') renderFeeds(value, feedList)
   })
 
   return watchedState
