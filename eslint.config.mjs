@@ -17,7 +17,11 @@ export default defineConfig([
         ...globals.browser,
       },
     },
-
+    ignores: [
+      'dist/',
+      'dist-ssr/',
+      'node_modules/',
+    ],
     rules: {
       semi: ['error', 'never'],
       quotes: ['error', 'single'],
