@@ -20,7 +20,7 @@ const buildSchema = urls => yup.object({
     .notOneOf(urls, 'RSS уже существует'),
 })
 
-const handleSubmit = async (event) => {
+const handleSubmit = (event) => {
   event.preventDefault()
   const url = input.value.trim()
   if (!url) return
@@ -28,23 +28,24 @@ const handleSubmit = async (event) => {
   watchedState.form.status = 'validating'
   watchedState.form.error = null
 
-  try {
-    const validated = await buildSchema(watchedState.feeds).validate({ url })
-    watchedState.feeds = [...watchedState.feeds, validated.url]
-    watchedState.form.status = 'success'
+  buildSchema(watchedState.feeds)
+    .validate({ url })
+    .then((validated) => {
+      watchedState.feeds = [...watchedState.feeds, validated.url]
+      watchedState.form.status = 'success'
 
-    input.value = ''
-    input.focus()
+      input.value = ''
+      input.focus()
 
-    setTimeout(() => {
-      watchedState.form.status = 'idle'
-    }, 1200)
-  }
-  catch (err) {
-    const message = err?.errors?.[0] ?? err?.message ?? 'Ошибка валидации'
-    watchedState.form.error = message
-    watchedState.form.status = 'error'
-  }
+      setTimeout(() => {
+        watchedState.form.status = 'idle'
+      }, 1200)
+    })
+    .catch((err) => {
+      const message = err?.errors?.[0] ?? err?.message ?? 'Ошибка валидации'
+      watchedState.form.error = message
+      watchedState.form.status = 'error'
+    })
 }
 
 form.addEventListener('submit', handleSubmit)
