@@ -1,38 +1,45 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./src/form.css" />
     <title>RSS Aggregator</title>
+
+    <!-- Сначала стили формы -->
+    <link rel="stylesheet" href="./src/form.css" />
+    <!-- Потом bootstrap и модалка -->
+    <link rel="stylesheet" href="./src/style.css" />
   </head>
 
   <body>
-    <main>
+    <main class="container mt-4">
       <h1>RSS агрегатор</h1>
       <p>Начните читать RSS сегодня! Это легко, это красиво.</p>
 
-      <form>
-        <label for="url-input">Ссылка RSS</label>
+      <form class="mb-3">
+        <label for="url-input" class="form-label">Ссылка RSS</label>
         <input
           id="url-input"
           type="text"
           name="url"
           required
           placeholder="https://example.com/feed"
+          class="form-control"
         />
-        <button class="btn btn-primary" type="submit">Добавить</button>
+        <button class="btn btn-primary mt-2" type="submit">Добавить</button>
       </form>
 
-      <p id="feedback" style="color: red;"></p>
+      <p id="feedback"></p>
 
-      <!--<ul id="feeds"></ul>-->
-      <section id="feeds" class="feeds"></section>
-      <section id="posts" class="posts"></section>
+      <section id="feeds" class="feeds mb-4"></section>
+      <section id="posts" class="posts mb-4"></section>
+
+      <!-- Пустая модалка, будет заполняться через JS -->
+      <div id="modal" class="hidden"></div>
 
       <p>Пример: https://lorem-rss.hexlet.app/feed</p>
     </main>
+
     <script type="module" src="./src/main.js"></script>
   </body>
-
 </html>
