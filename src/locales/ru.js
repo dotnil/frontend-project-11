@@ -6,6 +6,6 @@ export default {
       duplicate: 'RSS уже существует',
       validation: 'Ошибка валидации',
     },
-    success: 'RSS успешно добавлен',
+    success: 'RSS успешно загружен',
   },
 }

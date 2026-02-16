@@ -68,8 +68,8 @@ export default (elements, state) => {
   const modal = document.getElementById('modal') // один div для модалки
 
   const watchedState = onChange(state, (path, value) => {
-    if (path === 'form.error') bindFormError(value, input, feedback)
-    if (path === 'form.status') {
+    if (path === 'ui.form.error') bindFormError(value, input, feedback)
+    if (path === 'ui.form.status') {
       if (value === 'success') bindFormSuccess(true, input, feedback)
       if (value === 'idle') bindFormError(null, input, feedback)
     }
