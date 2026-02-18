@@ -18,10 +18,8 @@ initI18n.then(() => {
   const feedback = document.getElementById('feedback')
   const feedList = document.getElementById('feeds')
 
-  // Генерация ID без nanoid
   const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 5)}`
 
-  // Создание фида
   const createFeed = (title, description, url) => ({
     id: generateId(),
     title,
@@ -29,7 +27,6 @@ initI18n.then(() => {
     url,
   })
 
-  // Создание поста
   const createPost = (feedId, title, link, description, pubDate) => ({
     id: generateId(),
     feedId,
@@ -39,10 +36,9 @@ initI18n.then(() => {
     pubDate,
   })
 
-  // Начальное состояние приложения
   const state = {
-    feeds: {}, // объект id → feed
-    posts: {}, // объект id → post
+    feeds: {},
+    posts: {},
     ui: {
       form: { status: 'idle', error: null },
       loadingFeedIds: [],
