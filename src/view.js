@@ -1,46 +1,45 @@
-import onChange from 'on-change'
+const renderError = (error, elements) => {
+  const { input, feedback } = elements
 
-const renderFeeds = (feeds, feedListEl) => {
-  feedListEl.innerHTML = ''
-  feeds.forEach((url) => {
-    const li = document.createElement('li')
-    li.textContent = url
-    feedListEl.append(li)
-  })
+  input.classList.add('is-invalid')
+  feedback.textContent = error
+  feedback.classList.remove('text-success')
+  feedback.classList.add('text-danger')
 }
 
-const bindFormError = (error, inputEl, feedbackEl) => {
-  if (error) {
-    inputEl.classList.add('input-error')
-    feedbackEl.textContent = error
-    feedbackEl.className = 'feedback error'
-  }
-  else {
-    inputEl.classList.remove('input-error')
-    feedbackEl.textContent = ''
-    feedbackEl.className = 'feedback'
-  }
+const renderSuccess = (elements) => {
+  const { input, feedback } = elements
+
+  input.classList.remove('is-invalid')
+  feedback.textContent = 'RSS успешно загружен'
+  feedback.classList.remove('text-danger')
+  feedback.classList.add('text-success')
 }
 
-const bindFormSuccess = (isSuccess, inputEl, feedbackEl) => {
-  if (isSuccess) {
-    inputEl.classList.remove('input-error')
-    feedbackEl.textContent = 'RSS успешно добавлен'
-    feedbackEl.className = 'feedback success'
-  }
+const clearFeedback = (elements) => {
+  const { input, feedback } = elements
+
+  input.classList.remove('is-invalid')
+  feedback.textContent = ''
+  feedback.className = ''
 }
 
-export default (elements, state) => {
-  const { input, feedback, feedList } = elements
+export default (path, value, state, elements) => {
+  if (path === 'form.error') {
+    renderError(value, elements)
+  }
 
-  const watchedState = onChange(state, (path, value) => {
-    if (path === 'form.error') bindFormError(value, input, feedback)
-    if (path === 'form.status') {
-      if (value === 'success') bindFormSuccess(true, input, feedback)
-      if (value === 'idle') bindFormError(null, input, feedback)
+  if (path === 'form.status') {
+    if (value === 'valid') {
+      renderSuccess(elements)
     }
-    if (path === 'feeds') renderFeeds(value, feedList)
-  })
 
-  return watchedState
+    if (value === 'invalid') {
+      renderError(state.form.error, elements)
+    }
+
+    if (value === 'idle' || value === 'validating') {
+      clearFeedback(elements)
+    }
+  }
 }

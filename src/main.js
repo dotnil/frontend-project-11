@@ -1,86 +1,53 @@
+import 'bootstrap/dist/css/bootstrap.min.css'
+import './style.css'
+import onChange from 'on-change'
 import * as yup from 'yup'
-import { i18nInstance, initI18n } from './i18n.js'
 import initView from './view.js'
 
-initI18n.then(() => {
-  yup.setLocale({
-    string: {
-      url: () => i18nInstance.t('errors.invalidUrl'),
-    },
-    mixed: {
-      required: () => i18nInstance.t('errors.required'),
-      notOneOf: () => i18nInstance.t('errors.duplicate'),
-    },
-  })
+const form = document.querySelector('form')
+const input = document.querySelector('#url-input')
+const feedback = document.querySelector('#feedback')
 
-  const form = document.querySelector('form')
-  const input = document.getElementById('url-input')
-  const feedback = document.getElementById('feedback')
-  const feedList = document.getElementById('feeds')
+const state = {
+  feeds: [],
+  form: {
+    status: 'idle',
+    error: null,
+  },
+}
 
-  const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 5)}`
+const watchedState = onChange(state, (path, value) => {
+  initView(path, value, state, { input, feedback })
+})
 
-  const createFeed = (title, description, url) => ({
-    id: generateId(),
-    title,
-    description,
-    url,
-  })
+watchedState.form.status = 'valid'
 
-  const createPost = (feedId, title, link, description, pubDate) => ({
-    id: generateId(),
-    feedId,
-    title,
-    link,
-    description,
-    pubDate,
-  })
+const buildSchema = existingUrls => yup.object({
+  url: yup
+    .string()
+    .required('Не должно быть пустым')
+    .url('Ссылка должна быть валидным URL')
+    .notOneOf(existingUrls, 'RSS уже существует'),
+})
 
-  const state = {
-    feeds: {},
-    posts: {},
-    ui: {
-      form: { status: 'idle', error: null },
-      loadingFeedIds: [],
-    },
-  }
+form.addEventListener('submit', (e) => {
+  e.preventDefault()
 
-  const watchedState = initView({ input, feedback, feedList }, state)
+  const url = input.value.trim()
 
-  const buildSchema = urls => yup.object({
-    url: yup.string()
-      .url()
-      .required()
-      .notOneOf(urls),
-  })
+  watchedState.form.status = 'validating'
+  watchedState.form.error = null
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    const url = input.value.trim()
-    if (!url) return
-
-    watchedState.form.status = 'validating'
-    watchedState.form.error = null
-
-    buildSchema(watchedState.feeds)
-      .validate({ url })
-      .then((validated) => {
-        watchedState.feeds = [...watchedState.feeds, validated.url]
-        watchedState.form.status = 'success'
-
-        input.value = ''
-        input.focus()
-
-        setTimeout(() => {
-          watchedState.form.status = 'idle'
-        }, 1200)
-      })
-      .catch((err) => {
-        const message = err?.errors?.[0] ?? i18nInstance.t('errors.validation')
-        watchedState.form.error = message
-        watchedState.form.status = 'error'
-      })
-  }
-
-  form.addEventListener('submit', handleSubmit)
+  buildSchema(watchedState.feeds)
+    .validate({ url })
+    .then((data) => {
+      watchedState.feeds.push(data.url)
+      watchedState.form.status = 'valid'
+      input.value = ''
+      input.focus()
+    })
+    .catch((err) => {
+      watchedState.form.error = err.message
+      watchedState.form.status = 'invalid'
+    })
 })
