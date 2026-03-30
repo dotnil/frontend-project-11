@@ -71,6 +71,7 @@ initI18n().then(() => {
         watchedState.form.error = null
 
         input.value = ''
+        console.log(state)
         input.focus()
       })
       .catch((error) => {
