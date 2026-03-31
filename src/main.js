@@ -7,23 +7,77 @@ import axios from 'axios'
 import parseRss from './parser.js'
 import { i18nInstance, initI18n } from './i18n.js'
 
+/* ------------------ ID GENERATOR ------------------ */
+
+const generateId = (() => {
+  let id = 1
+  return () => id++
+})()
+
+/* ------------------ STATE ------------------ */
+
 const state = {
   feeds: [],
   posts: [],
   form: {
-    status: 'idle', // idle | validating | loading | success | failed
+    status: 'idle',
     error: null,
   },
 }
 
+/* ------------------ DOM ------------------ */
+
 const form = document.querySelector('form')
 const input = document.querySelector('#url-input')
 const feedback = document.querySelector('#feedback')
+
 const elements = { input, feedback }
+
+/* ------------------ VIEW ------------------ */
 
 const watchedState = onChange(state, (path, value) => {
   initView(path, value, state, elements)
 })
+
+/* ------------------ HELPERS ------------------ */
+
+const buildProxyUrl = url =>
+  `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+
+/* ------------------ AUTO UPDATE ------------------ */
+
+const updateFeed = (feed) => {
+  console.log('updateFeed:', feed.url)
+  return axios.get(buildProxyUrl(feed.url))
+    .then((response) => {
+      const { posts } = parseRss(response.data.contents)
+
+      const existingLinks = new Set(state.posts.map(post => post.link))
+
+      const newPosts = posts
+        .filter(post => !existingLinks.has(post.link))
+        .map(post => ({
+          ...post,
+          id: generateId(),
+          feedId: feed.id,
+        }))
+
+      if (newPosts.length > 0) {
+        watchedState.posts.push(...newPosts)
+      }
+    })
+    .catch(() => {})
+}
+
+const updateAllFeeds = (feeds) => {
+  const promises = feeds.map(feed => updateFeed(feed))
+
+  Promise.all(promises).finally(() => {
+    setTimeout(() => updateAllFeeds(feeds), 5000)
+  })
+}
+
+/* ------------------ INIT ------------------ */
 
 initI18n().then(() => {
   yup.setLocale({
@@ -44,49 +98,68 @@ initI18n().then(() => {
       .notOneOf(existingUrls),
   })
 
-  const buildProxyUrl = url => `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
-
   form.addEventListener('submit', (e) => {
     e.preventDefault()
+
     const url = input.value.trim()
     if (!url) return
 
     watchedState.form.status = 'validating'
     watchedState.form.error = null
 
-    buildSchema(watchedState.feeds.map(f => f.url))
+    buildSchema(state.feeds.map(feed => feed.url))
       .validate({ url })
-      .then(({ url: validatedUrl }) => {
+      .then(() => {
         watchedState.form.status = 'loading'
-        return axios.get(buildProxyUrl(validatedUrl))
+        return axios.get(buildProxyUrl(url))
       })
       .then((response) => {
-        const xml = response.data.contents
-        const { feed, posts } = parseRss(xml)
+        const { feed, posts } = parseRss(response.data.contents)
 
-        watchedState.feeds.push(feed)
-        posts.forEach(post => watchedState.posts.push(post))
+        const feedWithMeta = {
+          ...feed,
+          id: generateId(),
+          url,
+        }
+
+        watchedState.feeds.push(feedWithMeta)
+
+        const existingLinks = new Set(state.posts.map(post => post.link))
+
+        const newPosts = posts
+          .filter(post => !existingLinks.has(post.link))
+          .map(post => ({
+            ...post,
+            id: generateId(),
+            feedId: feedWithMeta.id,
+          }))
+
+        watchedState.posts.push(...newPosts)
 
         watchedState.form.status = 'success'
-        watchedState.form.error = null
-
         input.value = ''
-        console.log(state)
         input.focus()
       })
       .catch((error) => {
+        console.log(error)
+        console.log(error.name)
         if (error.name === 'ValidationError') {
           watchedState.form.error = error.message
           watchedState.form.status = 'failed'
           return
         }
+
         if (error.name === 'ParsingError') {
           watchedState.form.error = i18nInstance.t('errors.parsing')
           watchedState.form.status = 'failed'
           return
         }
+
         watchedState.form.error = i18nInstance.t('errors.network')
         watchedState.form.status = 'failed'
       })
   })
+
+  // 🚀 запуск автообновления
+  updateAllFeeds(state.feeds)
 })

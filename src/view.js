@@ -40,10 +40,16 @@ const renderFeeds = (feeds, container) => {
 
 const renderPosts = (posts, container) => {
   container.innerHTML = ''
-  posts.forEach((post) => {
+  const sortedPosts = [...posts].sort((a, b) => b.pubDate - a.pubDate)
+
+  sortedPosts.forEach((post) => {
     const li = document.createElement('li')
     li.classList.add('list-group-item')
-    li.innerHTML = `<a href="${post.link}" target="_blank">${post.title}</a>`
+    li.innerHTML = `
+      <a href="${post.link}" target="_blank">${post.title}</a>
+      <br>
+      <small>${post.pubDate.toLocaleString()}</small>
+    `
     container.append(li)
   })
 }

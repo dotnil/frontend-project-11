@@ -31,6 +31,7 @@ const parseRss = (xmlString) => {
     const postTitle = item.querySelector('title')?.textContent
     const postDescription = item.querySelector('description')?.textContent
     const link = item.querySelector('link')?.textContent
+    const pubDateRaw = item.querySelector('pubDate')?.textContent
 
     if (!postTitle || !postDescription || !link) {
       throw createParsingError('Некорректная структура поста')
@@ -40,6 +41,7 @@ const parseRss = (xmlString) => {
       title: postTitle,
       description: postDescription,
       link,
+      pubDate: pubDateRaw ? new Date(pubDateRaw) : new Date(),
     }
   })
 
