@@ -1,10 +1,11 @@
 import { i18nInstance } from './i18n.js'
+import { Modal } from 'bootstrap'
 
 const renderError = (error, elements) => {
   const { input, feedback } = elements
   if (error) {
     input.classList.add('is-invalid')
-    feedback.textContent = error
+    elements.feedback.textContent = error
     feedback.classList.add('text-danger')
     feedback.classList.remove('text-success')
   }
@@ -13,7 +14,7 @@ const renderError = (error, elements) => {
 const renderSuccess = (elements) => {
   const { input, feedback } = elements
   input.classList.remove('is-invalid')
-  feedback.textContent = i18nInstance.t('feedback.success')
+  elements.feedback.textContent = i18nInstance.t('feedback.success')
   feedback.classList.remove('text-danger')
   feedback.classList.add('text-success')
 }
@@ -21,7 +22,7 @@ const renderSuccess = (elements) => {
 const clearFeedback = (elements) => {
   const { input, feedback } = elements
   input.classList.remove('is-invalid')
-  feedback.textContent = ''
+  elements.feedback.textContent = ''
   feedback.className = ''
 }
 
@@ -38,25 +39,53 @@ const renderFeeds = (feeds, container) => {
   })
 }
 
-const renderPosts = (posts, container) => {
+const renderPosts = (posts, watchedState, container) => {
   container.innerHTML = ''
-  const sortedPosts = [...posts].sort((a, b) => b.pubDate - a.pubDate)
 
-  sortedPosts.forEach((post) => {
+  posts.forEach((post) => {
     const li = document.createElement('li')
-    li.classList.add('list-group-item')
-    li.innerHTML = `
-      <a href="${post.link}" target="_blank">${post.title}</a>
-      <br>
-      <small>${post.pubDate.toLocaleString()}</small>
-    `
+    li.classList.add(
+      'list-group-item',
+      'd-flex',
+      'justify-content-between',
+      'align-items-start',
+    )
+
+    const a = document.createElement('a')
+    a.href = post.link
+    a.textContent = post.title
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+
+    const isViewed = watchedState.ui.viewedPosts.includes(post.id)
+    a.classList.add(isViewed ? 'fw-normal' : 'fw-bold')
+
+    a.addEventListener('click', () => {
+      if (!watchedState.ui.viewedPosts.includes(post.id)) {
+        watchedState.ui.viewedPosts.push(post.id)
+      }
+    })
+
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = 'Просмотр'
+    button.classList.add('btn', 'btn-outline-primary', 'btn-sm')
+
+    button.addEventListener('click', () => {
+      if (!watchedState.ui.viewedPosts.includes(post.id)) {
+        watchedState.ui.viewedPosts.push(post.id)
+      }
+
+      watchedState.ui.modal.postId = post.id
+    })
+
+    li.append(a, button)
     container.append(li)
   })
 }
 
-export default (path, value, state, elements) => {
-  const feedsContainer = document.querySelector('#feeds')
-  const postsContainer = document.querySelector('#posts')
+export default (path, value, watchedState, elements) => {
+  const { feedsContainer, postsContainer } = elements
 
   if (path === 'form.error') {
     renderError(value, elements)
@@ -67,7 +96,7 @@ export default (path, value, state, elements) => {
       renderSuccess(elements)
     }
     if (value === 'failed') {
-      renderError(state.form.error, elements)
+      renderError(watchedState.form.error, elements)
     }
     if (value === 'idle' || value === 'validating' || value === 'loading') {
       clearFeedback(elements)
@@ -75,10 +104,27 @@ export default (path, value, state, elements) => {
   }
 
   if (path === 'feeds' || path.startsWith('feeds')) {
-    renderFeeds(state.feeds, feedsContainer)
+    renderFeeds(watchedState.feeds, feedsContainer)
   }
 
   if (path === 'posts' || path.startsWith('posts')) {
-    renderPosts(state.posts, postsContainer)
+    renderPosts(watchedState.posts, watchedState, postsContainer)
   }
+
+  if (path === 'ui.modal.postId') {
+    renderModal(value, watchedState, elements)
+  }
+}
+
+const renderModal = (postId, state, elements) => {
+  const post = state.posts.find(post => post.id === postId)
+  if (!post) return
+
+  elements.modalTitle.textContent = post.title
+  elements.modalDescription.textContent = post.description
+  elements.modalLink.href = post.link
+
+  const modalInstance = Modal.getOrCreateInstance(elements.modal)
+  modalInstance.show()
+  console.log('OPEN MODAL', postId)
 }

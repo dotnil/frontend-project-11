@@ -32,10 +32,44 @@
       <section id="feeds" class="feeds mb-4"></section>
       <section id="posts" class="posts mb-4"></section>
 
-      <div id="modal" class="hidden"></div>
-
       <p>Пример: https://lorem-rss.hexlet.app/feed</p>
     </main>
+
+    <div class="modal fade" id="modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <p class="modal-description"></p>
+          </div>
+
+          <div class="modal-footer">
+            <a
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-primary modal-link"
+            >
+              Читать полностью
+            </a>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Закрыть
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="./src/main.js"></script>
   </body>

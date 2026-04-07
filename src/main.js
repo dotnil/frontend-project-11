@@ -6,15 +6,12 @@ import initView from './view.js'
 import axios from 'axios'
 import parseRss from './parser.js'
 import { i18nInstance, initI18n } from './i18n.js'
-
-/* ------------------ ID GENERATOR ------------------ */
+import 'bootstrap'
 
 const generateId = (() => {
   let id = 1
   return () => id++
 })()
-
-/* ------------------ STATE ------------------ */
 
 const state = {
   feeds: [],
@@ -23,31 +20,36 @@ const state = {
     status: 'idle',
     error: null,
   },
+  ui: {
+    viewedPosts: [],
+    modal: {
+      postId: null,
+    },
+  },
 }
 
-/* ------------------ DOM ------------------ */
-
 const form = document.querySelector('form')
-const input = document.querySelector('#url-input')
-const feedback = document.querySelector('#feedback')
 
-const elements = { input, feedback }
+const elements = {
+  input: document.querySelector('#url-input'),
+  feedback: document.querySelector('#feedback'),
+  feedsContainer: document.querySelector('#feeds'),
+  postsContainer: document.querySelector('#posts'),
 
-/* ------------------ VIEW ------------------ */
+  modal: document.querySelector('#modal'),
+  modalTitle: document.querySelector('.modal-title'),
+  modalDescription: document.querySelector('.modal-description'),
+  modalLink: document.querySelector('.modal-link'),
+}
 
 const watchedState = onChange(state, (path, value) => {
-  initView(path, value, state, elements)
+  initView(path, value, watchedState, elements)
 })
-
-/* ------------------ HELPERS ------------------ */
 
 const buildProxyUrl = url =>
   `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
 
-/* ------------------ AUTO UPDATE ------------------ */
-
 const updateFeed = (feed) => {
-  console.log('updateFeed:', feed.url)
   return axios.get(buildProxyUrl(feed.url))
     .then((response) => {
       const { posts } = parseRss(response.data.contents)
@@ -77,8 +79,6 @@ const updateAllFeeds = (feeds) => {
   })
 }
 
-/* ------------------ INIT ------------------ */
-
 initI18n().then(() => {
   yup.setLocale({
     string: {
@@ -101,7 +101,7 @@ initI18n().then(() => {
   form.addEventListener('submit', (e) => {
     e.preventDefault()
 
-    const url = input.value.trim()
+    const url = elements.input.value.trim()
     if (!url) return
 
     watchedState.form.status = 'validating'
@@ -137,8 +137,8 @@ initI18n().then(() => {
         watchedState.posts.push(...newPosts)
 
         watchedState.form.status = 'success'
-        input.value = ''
-        input.focus()
+        elements.input.value = ''
+        elements.input.focus()
       })
       .catch((error) => {
         console.log(error)
@@ -160,6 +160,5 @@ initI18n().then(() => {
       })
   })
 
-  // 🚀 запуск автообновления
   updateAllFeeds(state.feeds)
 })
