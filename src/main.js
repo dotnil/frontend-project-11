@@ -49,10 +49,39 @@ const watchedState = onChange(state, (path, value) => {
 const buildProxyUrl = url =>
   `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
 
+// ✅ i18n отдельно
+initI18n().then(() => {
+  yup.setLocale({
+    string: {
+      url: () => i18nInstance.t('errors.invalidUrl'),
+    },
+    mixed: {
+      required: () => i18nInstance.t('errors.required'),
+      notOneOf: () => i18nInstance.t('errors.duplicate'),
+    },
+  })
+})
+
+// ✅ схема отдельно
+const buildSchema = existingUrls => yup.object({
+  url: yup
+    .string()
+    .required()
+    .url()
+    .notOneOf(existingUrls),
+})
+
+// ✅ обновление одного фида
 const updateFeed = (feed) => {
   return axios.get(buildProxyUrl(feed.url))
     .then((response) => {
-      const { posts } = parseRss(response.data.contents)
+      const { contents } = response.data
+
+      if (!contents) {
+        return
+      }
+
+      const { posts } = parseRss(contents)
 
       const existingLinks = new Set(state.posts.map(post => post.link))
 
@@ -71,6 +100,7 @@ const updateFeed = (feed) => {
     .catch(() => {})
 }
 
+// ✅ обновление всех фидов
 const updateAllFeeds = (feeds) => {
   const promises = feeds.map(feed => updateFeed(feed))
 
@@ -79,86 +109,78 @@ const updateAllFeeds = (feeds) => {
   })
 }
 
-initI18n().then(() => {
-  yup.setLocale({
-    string: {
-      url: () => i18nInstance.t('errors.invalidUrl'),
-    },
-    mixed: {
-      required: () => i18nInstance.t('errors.required'),
-      notOneOf: () => i18nInstance.t('errors.duplicate'),
-    },
-  })
+// ✅ submit НЕ зависит от i18n
+form.addEventListener('submit', (e) => {
+  e.preventDefault()
 
-  const buildSchema = existingUrls => yup.object({
-    url: yup
-      .string()
-      .required()
-      .url()
-      .notOneOf(existingUrls),
-  })
+  const url = elements.input.value.trim()
+  if (!url) return
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault()
+  watchedState.form.status = 'validating'
+  watchedState.form.error = null
 
-    const url = elements.input.value.trim()
-    if (!url) return
+  buildSchema(state.feeds.map(feed => feed.url))
+    .validate({ url })
+    .then(() => {
+      watchedState.form.status = 'loading'
+      return axios.get(buildProxyUrl(url))
+    })
+    .then((response) => {
+      const { contents } = response.data
 
-    watchedState.form.status = 'validating'
-    watchedState.form.error = null
+      if (!contents) {
+        throw new Error('NetworkError')
+      }
 
-    buildSchema(state.feeds.map(feed => feed.url))
-      .validate({ url })
-      .then(() => {
-        watchedState.form.status = 'loading'
-        return axios.get(buildProxyUrl(url))
-      })
-      .then((response) => {
-        const { feed, posts } = parseRss(response.data.contents)
+      const { feed, posts } = parseRss(contents)
 
-        const feedWithMeta = {
-          ...feed,
+      const feedWithMeta = {
+        ...feed,
+        id: generateId(),
+        url,
+      }
+
+      watchedState.feeds.push(feedWithMeta)
+
+      const existingLinks = new Set(state.posts.map(post => post.link))
+
+      const newPosts = posts
+        .filter(post => !existingLinks.has(post.link))
+        .map(post => ({
+          ...post,
           id: generateId(),
-          url,
-        }
+          feedId: feedWithMeta.id,
+        }))
 
-        watchedState.feeds.push(feedWithMeta)
+      watchedState.posts.push(...newPosts)
 
-        const existingLinks = new Set(state.posts.map(post => post.link))
-
-        const newPosts = posts
-          .filter(post => !existingLinks.has(post.link))
-          .map(post => ({
-            ...post,
-            id: generateId(),
-            feedId: feedWithMeta.id,
-          }))
-
-        watchedState.posts.push(...newPosts)
-
-        watchedState.form.status = 'success'
-        elements.input.value = ''
-        elements.input.focus()
-      })
-      .catch((error) => {
-        console.log(error)
-        console.log(error.name)
-        if (error.name === 'ValidationError') {
-          watchedState.form.error = error.message
-          watchedState.form.status = 'failed'
-          return
-        }
-
-        if (error.name === 'ParsingError') {
-          watchedState.form.error = i18nInstance.t('errors.parsing')
-          watchedState.form.status = 'failed'
-          return
-        }
-
+      watchedState.form.status = 'success'
+      elements.input.value = ''
+      elements.input.focus()
+    })
+    .catch((error) => {
+      if (error.message === 'NetworkError') {
         watchedState.form.error = i18nInstance.t('errors.network')
         watchedState.form.status = 'failed'
-      })
-  })
+        return
+      }
 
-  updateAllFeeds(state.feeds)
+      if (error.name === 'ValidationError') {
+        watchedState.form.error = error.message
+        watchedState.form.status = 'failed'
+        return
+      }
+
+      if (error.name === 'ParsingError') {
+        watchedState.form.error = i18nInstance.t('errors.parsing')
+        watchedState.form.status = 'failed'
+        return
+      }
+
+      watchedState.form.error = i18nInstance.t('errors.network')
+      watchedState.form.status = 'failed'
+    })
 })
+
+// ✅ запуск сразу
+updateAllFeeds(state.feeds)

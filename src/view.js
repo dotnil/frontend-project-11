@@ -23,7 +23,7 @@ const clearFeedback = (elements) => {
   const { input, feedback } = elements
   input.classList.remove('is-invalid')
   elements.feedback.textContent = ''
-  feedback.className = ''
+  feedback.classList.remove('text-danger', 'text-success')
 }
 
 const renderFeeds = (feeds, container) => {
@@ -32,7 +32,7 @@ const renderFeeds = (feeds, container) => {
     const div = document.createElement('div')
     div.classList.add('mb-3')
     div.innerHTML = `
-      <h5>${feed.title}</h5>
+      <h3>${feed.title}</h3>
       <p>${feed.description}</p>
     `
     container.append(div)
@@ -58,7 +58,12 @@ const renderPosts = (posts, watchedState, container) => {
     a.rel = 'noopener noreferrer'
 
     const isViewed = watchedState.ui.viewedPosts.includes(post.id)
-    a.classList.add(isViewed ? 'fw-normal' : 'fw-bold')
+    if (isViewed) {
+      a.classList.add('fw-normal', 'link-secondary')
+    }
+    else {
+      a.classList.add('fw-bold')
+    }
 
     a.addEventListener('click', () => {
       if (!watchedState.ui.viewedPosts.includes(post.id)) {
@@ -107,7 +112,7 @@ export default (path, value, watchedState, elements) => {
     renderFeeds(watchedState.feeds, feedsContainer)
   }
 
-  if (path === 'posts' || path.startsWith('posts')) {
+  if (path === 'posts' || path.startsWith('posts') || path === 'ui.viewedPosts') {
     renderPosts(watchedState.posts, watchedState, postsContainer)
   }
 
