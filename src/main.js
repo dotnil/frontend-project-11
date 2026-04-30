@@ -8,26 +8,9 @@ import { i18nInstance, initI18n } from './i18n.js'
 import 'bootstrap'
 import { fetchRss } from './api.js'
 import { startUpdater } from './updater.js'
+import { generateId, initialState } from './state.js'
 
-const generateId = (() => {
-  let id = 1
-  return () => id++
-})()
-
-const state = {
-  feeds: [],
-  posts: [],
-  form: {
-    status: 'idle',
-    error: null,
-  },
-  ui: {
-    viewedPosts: [],
-    modal: {
-      postId: null,
-    },
-  },
-}
+const state = initialState
 
 const form = document.querySelector('form')
 
