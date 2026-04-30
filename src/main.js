@@ -3,10 +3,11 @@ import './style.css'
 import * as yup from 'yup'
 import onChange from 'on-change'
 import initView from './view.js'
-import axios from 'axios'
 import parseRss from './parser.js'
 import { i18nInstance, initI18n } from './i18n.js'
 import 'bootstrap'
+import { fetchRss } from './api.js'
+import { startUpdater } from './updater.js'
 
 const generateId = (() => {
   let id = 1
@@ -46,10 +47,8 @@ const watchedState = onChange(state, (path, value) => {
   initView(path, value, watchedState, elements)
 })
 
-const buildProxyUrl = url =>
-  `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`
+startUpdater(watchedState, generateId)
 
-// ✅ i18n отдельно
 initI18n().then(() => {
   yup.setLocale({
     string: {
@@ -62,7 +61,6 @@ initI18n().then(() => {
   })
 })
 
-// ✅ схема отдельно
 const buildSchema = existingUrls => yup.object({
   url: yup
     .string()
@@ -71,45 +69,6 @@ const buildSchema = existingUrls => yup.object({
     .notOneOf(existingUrls),
 })
 
-// ✅ обновление одного фида
-const updateFeed = (feed) => {
-  return axios.get(buildProxyUrl(feed.url))
-    .then((response) => {
-      const { contents } = response.data
-
-      if (!contents) {
-        return
-      }
-
-      const { posts } = parseRss(contents)
-
-      const existingLinks = new Set(state.posts.map(post => post.link))
-
-      const newPosts = posts
-        .filter(post => !existingLinks.has(post.link))
-        .map(post => ({
-          ...post,
-          id: generateId(),
-          feedId: feed.id,
-        }))
-
-      if (newPosts.length > 0) {
-        watchedState.posts.push(...newPosts)
-      }
-    })
-    .catch(() => {})
-}
-
-// ✅ обновление всех фидов
-const updateAllFeeds = (feeds) => {
-  const promises = feeds.map(feed => updateFeed(feed))
-
-  Promise.all(promises).finally(() => {
-    setTimeout(() => updateAllFeeds(feeds), 5000)
-  })
-}
-
-// ✅ submit НЕ зависит от i18n
 form.addEventListener('submit', (e) => {
   e.preventDefault()
 
@@ -123,7 +82,7 @@ form.addEventListener('submit', (e) => {
     .validate({ url })
     .then(() => {
       watchedState.form.status = 'loading'
-      return axios.get(buildProxyUrl(url))
+      return fetchRss(url)
     })
     .then((response) => {
       const { contents } = response.data
@@ -181,6 +140,3 @@ form.addEventListener('submit', (e) => {
       watchedState.form.status = 'failed'
     })
 })
-
-// ✅ запуск сразу
-updateAllFeeds(state.feeds)
