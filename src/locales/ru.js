@@ -1,5 +1,8 @@
 export default {
   translation: {
+    feedback: {
+      success: 'RSS успешно загружен',
+    },
     errors: {
       network: 'Ошибка сети',
       invalidUrl: 'Ссылка должна быть валидным URL',
@@ -7,8 +10,8 @@ export default {
       duplicate: 'RSS уже существует',
       parsing: 'Ресурс не содержит валидный RSS',
     },
-    feedback: {
-      success: 'RSS успешно загружен',
+    buttons: {
+      view: 'Просмотр',
     },
   },
 }

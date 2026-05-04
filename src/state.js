@@ -3,7 +3,7 @@ const generateId = (() => {
   return () => id++
 })()
 
-const initialState = {
+const createInitialState = () => ({
   feeds: [],
   posts: [],
   form: {
@@ -16,6 +16,6 @@ const initialState = {
       postId: null,
     },
   },
-}
+})
 
-export { generateId, initialState }
+export { generateId, createInitialState }
