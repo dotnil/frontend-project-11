@@ -1,50 +1,30 @@
-import { fetchRss } from './api.js'
-import parseRss from './parser.js'
+import { rssService } from './rssService.js'
 
 const updateFeed = (feed, watchedState, generateId) => {
-  return fetchRss(feed.url)
-    .then((response) => {
-      const { contents } = response.data
-      if (!contents) return
+  return rssService(feed.url, watchedState.posts, generateId)
+    .then(({ posts }) => {
+      if (posts.length === 0) return
 
-      const { posts } = parseRss(contents)
+      watchedState.posts.push(...posts)
 
-      const existingLinks = new Set(
-        watchedState.posts
-          .filter(post => post.feedId === feed.id)
-          .map(post => post.link),
+      console.log(
+        `[Обновление] ${new Date().toLocaleTimeString()} | Фид "${
+          feed.title
+        }" — добавлено ${posts.length} постов`,
       )
-
-      const newPosts = posts
-        .filter(post => !existingLinks.has(post.link))
-        .map(post => ({
-          ...post,
-          id: generateId(),
-          feedId: feed.id,
-        }))
-
-      if (newPosts.length > 0) {
-        watchedState.posts = [...watchedState.posts, ...newPosts]
-        console.log(
-          `[Обновление] ${new Date().toLocaleTimeString()} | Фид "${
-            feed.title
-          }" — добавлено ${newPosts.length} постов`,
-        )
-      }
     })
     .catch(() => {
+      // можно позже добавить обработку
     })
 }
 
 const startUpdater = (watchedState, generateId) => {
   const updateAll = () => {
     const feeds = watchedState.feeds
-    if (feeds.length === 0) {
-      setTimeout(updateAll, 5000)
-      return
-    }
 
-    feeds.forEach(feed => updateFeed(feed, watchedState, generateId))
+    feeds.forEach((feed) => {
+      updateFeed(feed, watchedState, generateId)
+    })
 
     setTimeout(updateAll, 5000)
   }
@@ -52,4 +32,4 @@ const startUpdater = (watchedState, generateId) => {
   updateAll()
 }
 
-export { startUpdater, updateFeed }
+export { startUpdater }

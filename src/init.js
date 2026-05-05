@@ -3,7 +3,20 @@ import { i18nInstance } from './i18n.js'
 import { rssService } from './rssService.js'
 
 // ------------------------
-// Validation
+// yup localization
+// ------------------------
+yup.setLocale({
+  string: {
+    url: () => i18nInstance.t('errors.invalidUrl'),
+  },
+  mixed: {
+    required: () => i18nInstance.t('errors.required'),
+    notOneOf: () => i18nInstance.t('errors.duplicate'),
+  },
+})
+
+// ------------------------
+// validation schema
 // ------------------------
 const buildSchema = existingUrls => yup.object({
   url: yup
@@ -14,27 +27,27 @@ const buildSchema = existingUrls => yup.object({
 })
 
 // ------------------------
-// Error handling
+// error handler
 // ------------------------
 const handleError = (error, watchedState) => {
   if (error.message === 'NetworkError') {
-    watchedState.form.error = i18nInstance.t('errors.network')
+    watchedState.form.error = i18nInstance.t('errors.networkError')
   }
   else if (error.name === 'ValidationError') {
     watchedState.form.error = error.message
   }
   else if (error.name === 'ParsingError') {
-    watchedState.form.error = i18nInstance.t('errors.parsing')
+    watchedState.form.error = i18nInstance.t('errors.invalidRss')
   }
   else {
-    watchedState.form.error = i18nInstance.t('errors.network')
+    watchedState.form.error = i18nInstance.t('errors.networkError')
   }
 
   watchedState.form.status = 'failed'
 }
 
 // ------------------------
-// Main logic
+// init
 // ------------------------
 export default (watchedState, elements, generateId, state) => {
   const form = document.querySelector('form')
