@@ -1,57 +1,40 @@
-const createParsingError = (message) => {
-  const error = new Error(message)
-  error.name = 'ParsingError'
-  return error
+const createError = (code) => {
+  const e = new Error(code)
+  e.name = 'ParsingError'
+  e.code = code
+  return e
 }
 
-const parseRss = (xmlString) => {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(xmlString, 'application/xml')
+const parseItem = (item) => {
+  const title = item.querySelector('title')?.textContent
+  const link = item.querySelector('link')?.textContent
+  const description = item.querySelector('description')?.textContent || ''
 
-  const parserError = doc.querySelector('parsererror')
-  if (parserError) {
-    throw createParsingError('Невалидный XML')
+  if (!title || !link) return null
+
+  return { title, link, description }
+}
+
+export default (xml) => {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml')
+
+  if (doc.querySelector('parsererror')) {
+    throw createError('invalidXML')
   }
 
   const channel = doc.querySelector('channel')
-  if (!channel) {
-    throw createParsingError('Это не RSS')
-  }
+  if (!channel) throw createError('invalidRSS')
 
   const title = channel.querySelector('title')?.textContent
   const description = channel.querySelector('description')?.textContent
 
   if (!title || !description) {
-    throw createParsingError('RSS не содержит обязательных полей')
+    throw createError('invalidStructure')
   }
 
-  const items = doc.querySelectorAll('item')
+  const posts = Array.from(channel.querySelectorAll('item'))
+    .map(parseItem)
+    .filter(Boolean)
 
-  const posts = Array.from(items).map((item) => {
-    const postTitle = item.querySelector('title')?.textContent
-    const postDescription = item.querySelector('description')?.textContent
-    const link = item.querySelector('link')?.textContent
-    const pubDateRaw = item.querySelector('pubDate')?.textContent
-
-    if (!postTitle || !postDescription || !link) {
-      throw createParsingError('Некорректная структура поста')
-    }
-
-    return {
-      title: postTitle,
-      description: postDescription,
-      link,
-      pubDate: pubDateRaw ? new Date(pubDateRaw) : new Date(),
-    }
-  })
-
-  return {
-    feed: {
-      title,
-      description,
-    },
-    posts,
-  }
+  return { feed: { title, description }, posts }
 }
-
-export default parseRss

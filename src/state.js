@@ -1,9 +1,9 @@
-const generateId = (() => {
+export const generateId = (() => {
   let id = 1
   return () => id++
 })()
 
-const createInitialState = () => ({
+export const createInitialState = () => ({
   feeds: [],
   posts: [],
   form: {
@@ -17,5 +17,3 @@ const createInitialState = () => ({
     },
   },
 })
-
-export { generateId, createInitialState }

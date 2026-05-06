@@ -1,35 +1,29 @@
 import { rssService } from './rssService.js'
 
-const updateFeed = (feed, watchedState, generateId) => {
-  return rssService(feed.url, watchedState.posts, generateId)
-    .then(({ posts }) => {
-      if (posts.length === 0) return
-
-      watchedState.posts.push(...posts)
-
-      console.log(
-        `[Обновление] ${new Date().toLocaleTimeString()} | Фид "${
-          feed.title
-        }" — добавлено ${posts.length} постов`,
+const updateAll = async (state, generateId) => {
+  for (const feed of state.feeds) {
+    try {
+      const { posts } = await rssService(
+        feed.url,
+        state.posts,
+        generateId,
       )
-    })
-    .catch(() => {
-      // можно позже добавить обработку
-    })
+
+      if (posts.length) {
+        state.posts.push(...posts)
+      }
+    }
+    catch {
+      // ignore
+    }
+  }
 }
 
-const startUpdater = (watchedState, generateId) => {
-  const updateAll = () => {
-    const feeds = watchedState.feeds
-
-    feeds.forEach((feed) => {
-      updateFeed(feed, watchedState, generateId)
-    })
-
-    setTimeout(updateAll, 5000)
+export const startUpdater = (state, generateId) => {
+  const run = async () => {
+    await updateAll(state, generateId)
+    setTimeout(run, 5000)
   }
 
-  updateAll()
+  run()
 }
-
-export { startUpdater }

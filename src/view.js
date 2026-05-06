@@ -1,45 +1,53 @@
-import { i18nInstance } from './i18n.js'
 import { Modal } from 'bootstrap'
+import { i18nInstance } from './i18n.js'
 
 const renderError = (error, elements) => {
   const { input, feedback } = elements
-  if (error) {
-    input.classList.add('is-invalid')
-    elements.feedback.textContent = error
-    feedback.classList.add('text-danger')
-    feedback.classList.remove('text-success')
-  }
+
+  input.classList.add('is-invalid')
+  input.classList.remove('is-valid')
+
+  feedback.textContent = error
+  feedback.classList.add('text-danger')
+  feedback.classList.remove('text-success')
 }
 
 const renderSuccess = (elements) => {
   const { input, feedback } = elements
+
   input.classList.remove('is-invalid')
-  elements.feedback.textContent = i18nInstance.t('feedback.success')
+  input.classList.add('is-valid')
+
+  feedback.textContent = i18nInstance.t('feedback.success')
   feedback.classList.remove('text-danger')
   feedback.classList.add('text-success')
 }
 
 const clearFeedback = (elements) => {
   const { input, feedback } = elements
-  input.classList.remove('is-invalid')
-  elements.feedback.textContent = ''
+
+  input.classList.remove('is-valid', 'is-invalid')
+  feedback.textContent = ''
   feedback.classList.remove('text-danger', 'text-success')
 }
 
 const renderFeeds = (feeds, container) => {
   container.innerHTML = ''
+
   feeds.forEach((feed) => {
     const div = document.createElement('div')
     div.classList.add('mb-3')
+
     div.innerHTML = `
       <h3>${feed.title}</h3>
       <p>${feed.description}</p>
     `
+
     container.append(div)
   })
 }
 
-const renderPosts = (posts, watchedState, container) => {
+const renderPosts = (posts, viewed, container, handlers) => {
   container.innerHTML = ''
 
   posts.forEach((post) => {
@@ -57,18 +65,14 @@ const renderPosts = (posts, watchedState, container) => {
     a.target = '_blank'
     a.rel = 'noopener noreferrer'
 
-    const isViewed = watchedState.ui.viewedPosts.includes(post.id)
-    if (isViewed) {
-      a.classList.add('fw-normal', 'link-secondary')
-    }
-    else {
-      a.classList.add('fw-bold')
-    }
+    const isViewed = viewed.includes(post.id)
+
+    a.classList.toggle('fw-bold', !isViewed)
+    a.classList.toggle('fw-normal', isViewed)
+    a.classList.toggle('link-secondary', isViewed)
 
     a.addEventListener('click', () => {
-      if (!watchedState.ui.viewedPosts.includes(post.id)) {
-        watchedState.ui.viewedPosts.push(post.id)
-      }
+      handlers.handlePostClick(post.id)
     })
 
     const button = document.createElement('button')
@@ -77,11 +81,7 @@ const renderPosts = (posts, watchedState, container) => {
     button.classList.add('btn', 'btn-outline-primary', 'btn-sm')
 
     button.addEventListener('click', () => {
-      if (!watchedState.ui.viewedPosts.includes(post.id)) {
-        watchedState.ui.viewedPosts.push(post.id)
-      }
-
-      watchedState.ui.modal.postId = post.id
+      handlers.handleOpenModal(post.id)
     })
 
     li.append(a, button)
@@ -89,47 +89,50 @@ const renderPosts = (posts, watchedState, container) => {
   })
 }
 
-export default (path, value, watchedState, elements) => {
-  const { feedsContainer, postsContainer } = elements
+const renderModal = (post, elements) => {
+  elements.modalTitle.textContent = post.title
+  elements.modalDescription.textContent = post.description
+  elements.modalLink.href = post.link
 
-  if (path === 'form.error') {
-    renderError(value, elements)
+  Modal.getOrCreateInstance(elements.modal).show()
+}
+
+export default (path, value, state, elements, handlers) => {
+  if (path.startsWith('feeds')) {
+    renderFeeds(state.feeds, elements.feedsContainer)
+  }
+
+  if (path.startsWith('posts') || path === 'ui.viewedPosts') {
+    renderPosts(
+      state.posts,
+      state.ui.viewedPosts,
+      elements.postsContainer,
+      handlers,
+    )
+  }
+
+  if (path === 'ui.modal.postId') {
+    const post = state.posts.find(p => p.id === value)
+    if (!post) return
+
+    renderModal(post, elements)
   }
 
   if (path === 'form.status') {
     if (value === 'success') {
       renderSuccess(elements)
     }
+
     if (value === 'failed') {
-      renderError(watchedState.form.error, elements)
+      renderError(state.form.error, elements)
     }
-    if (value === 'idle' || value === 'validating' || value === 'loading') {
+
+    if (['idle', 'validating', 'loading'].includes(value)) {
       clearFeedback(elements)
     }
   }
 
-  if (path === 'feeds' || path.startsWith('feeds')) {
-    renderFeeds(watchedState.feeds, feedsContainer)
+  if (path === 'form.error') {
+    renderError(value, elements)
   }
-
-  if (path === 'posts' || path.startsWith('posts') || path === 'ui.viewedPosts') {
-    renderPosts(watchedState.posts, watchedState, postsContainer)
-  }
-
-  if (path === 'ui.modal.postId') {
-    renderModal(value, watchedState, elements)
-  }
-}
-
-const renderModal = (postId, state, elements) => {
-  const post = state.posts.find(post => post.id === postId)
-  if (!post) return
-
-  elements.modalTitle.textContent = post.title
-  elements.modalDescription.textContent = post.description
-  elements.modalLink.href = post.link
-
-  const modalInstance = Modal.getOrCreateInstance(elements.modal)
-  modalInstance.show()
-  console.log('OPEN MODAL', postId)
 }
