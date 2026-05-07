@@ -1,51 +1,31 @@
-import * as yup from 'yup'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import onChange from 'on-change'
 import initView from './view.js'
+import initApp from './init.js'
+import { createInitialState, generateId } from './state.js'
+import { startUpdater } from './updater.js'
+import { initI18n } from './i18n.js'
+import 'bootstrap'
 
-const form = document.querySelector('form')
-const input = document.getElementById('url-input')
-const feedback = document.getElementById('feedback')
-const feedList = document.getElementById('feeds')
+const state = createInitialState()
 
-const state = {
-  feeds: [],
-  form: { status: 'idle', error: null },
+const elements = {
+  input: document.querySelector('#url-input'),
+  feedback: document.querySelector('#feedback'),
+  feedsContainer: document.querySelector('#feeds'),
+  postsContainer: document.querySelector('#posts'),
+  modal: document.querySelector('#modal'),
+  modalTitle: document.querySelector('.modal-title'),
+  modalDescription: document.querySelector('.modal-description'),
+  modalLink: document.querySelector('.modal-link'),
 }
 
-const watchedState = initView({ input, feedback, feedList }, state)
+initI18n().then(() => {
+  const watchedState = onChange(state, (path, value) => {
+    initView(path, value, watchedState, elements, handlers)
+  })
 
-const buildSchema = urls => yup.object({
-  url: yup.string()
-    .url('Введите корректный URL')
-    .required('Поле не может быть пустым')
-    .notOneOf(urls, 'RSS уже существует'),
+  const handlers = initApp(watchedState, elements, generateId)
+
+  startUpdater(watchedState, generateId)
 })
-
-const handleSubmit = (event) => {
-  event.preventDefault()
-  const url = input.value.trim()
-  if (!url) return
-
-  watchedState.form.status = 'validating'
-  watchedState.form.error = null
-
-  buildSchema(watchedState.feeds)
-    .validate({ url })
-    .then((validated) => {
-      watchedState.feeds = [...watchedState.feeds, validated.url]
-      watchedState.form.status = 'success'
-
-      input.value = ''
-      input.focus()
-
-      setTimeout(() => {
-        watchedState.form.status = 'idle'
-      }, 1200)
-    })
-    .catch((err) => {
-      const message = err?.errors?.[0] ?? err?.message ?? 'Ошибка валидации'
-      watchedState.form.error = message
-      watchedState.form.status = 'error'
-    })
-}
-
-form.addEventListener('submit', handleSubmit)

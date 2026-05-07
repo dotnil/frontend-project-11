@@ -1,34 +1,75 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./src/form.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSS Aggregator</title>
+
   </head>
 
   <body>
-    <main>
+    <main class="container mt-4">
       <h1>RSS агрегатор</h1>
       <p>Начните читать RSS сегодня! Это легко, это красиво.</p>
 
-      <form>
-        <label for="url-input">Ссылка RSS</label>
+      <form class="mb-3">
+        <label for="url-input" class="form-label">Ссылка RSS</label>
         <input
           id="url-input"
+          aria-label="url"
           type="text"
           name="url"
           required
           placeholder="https://example.com/feed"
-        />
-        <button class="btn btn-primary" type="submit">Добавить</button>
+          class="form-control"
+        >
+        <button class="btn btn-primary mt-2" type="submit">Добавить</button>
       </form>
 
-      <ul id="feeds"></ul>
-      <p id="feedback" style="color: red;"></p>
+      <p id="feedback" class="feedback"></p>
+
+      <section id="feeds" class="feeds mb-4"></section>
+      <section id="posts" class="posts mb-4"></section>
 
       <p>Пример: https://lorem-rss.hexlet.app/feed</p>
     </main>
+
+    <div class="modal fade" id="modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <p class="modal-description"></p>
+          </div>
+
+          <div class="modal-footer">
+            <a
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-primary modal-link"
+            >
+              Читать полностью
+            </a>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Закрыть
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
