@@ -8,6 +8,7 @@ import { createHandlers } from './handlers.js'
 import { createInitialState, generateId } from './state.js'
 import { startUpdater } from './updater.js'
 import { initI18n } from './i18n.js'
+import { initEvents } from './events.js'
 
 const state = createInitialState()
 
@@ -56,34 +57,10 @@ const runApplication = () => {
       generateId,
     )
 
-    formElement.addEventListener(
-      'submit',
-      handlers.handleSubmit,
-    )
-
-    elements.postsContainer.addEventListener(
-      'click',
-      (event) => {
-        const postLink = event.target.closest('.post-link')
-
-        if (postLink) {
-          handlers.handlePostClick(
-            Number(postLink.dataset.id),
-          )
-
-          return
-        }
-
-        const previewButton = event.target.closest(
-          '.post-preview-button',
-        )
-
-        if (previewButton) {
-          handlers.handleOpenModal(
-            Number(previewButton.dataset.id),
-          )
-        }
-      },
+    initEvents(
+      elements,
+      formElement,
+      handlers,
     )
 
     startUpdater(watchedState, generateId)
