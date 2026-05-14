@@ -1,29 +1,36 @@
-import { rssService } from './rssService.js'
+import { loadFeed } from './handlers.js'
 
-const updateAll = async (state, generateId) => {
-  for (const feed of state.feeds) {
-    try {
-      const { posts } = await rssService(
-        feed.url,
-        state.posts,
-        generateId,
-      )
+const refreshFeeds = (state, generateId) => {
+  const updateTasks = state.feeds.map(feed =>
+    loadFeed(
+      feed.url,
+      state.posts,
+      generateId,
+    )
+      .then(({ posts: newPosts }) => {
+        if (newPosts.length > 0) {
+          state.posts.push(...newPosts)
+        }
+      })
+      .catch(() => {
+        // background sync failure is non-critical
+        // (ошибка фонового обновления не критична)
+      }),
+  )
 
-      if (posts.length) {
-        state.posts.push(...posts)
-      }
-    }
-    catch {
-      // ignore
-    }
-  }
+  return Promise.all(updateTasks)
 }
 
-export const startUpdater = (state, generateId) => {
-  const run = async () => {
-    await updateAll(state, generateId)
-    setTimeout(run, 5000)
+export const startUpdater = (
+  state,
+  generateId,
+) => {
+  const runUpdateLoop = () => {
+    refreshFeeds(state, generateId)
+      .then(() => {
+        setTimeout(runUpdateLoop, 5000)
+      })
   }
 
-  run()
+  runUpdateLoop()
 }
