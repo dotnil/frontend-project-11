@@ -19,6 +19,7 @@ const renderSuccess = (elements) => {
   input.classList.add('is-valid')
 
   feedback.textContent = i18nInstance.t('feedback.success')
+
   feedback.classList.remove('text-danger')
   feedback.classList.add('text-success')
 }
@@ -27,7 +28,9 @@ const clearFeedback = (elements) => {
   const { input, feedback } = elements
 
   input.classList.remove('is-valid', 'is-invalid')
+
   feedback.textContent = ''
+
   feedback.classList.remove('text-danger', 'text-success')
 }
 
@@ -35,57 +38,65 @@ const renderFeeds = (feeds, container) => {
   container.innerHTML = ''
 
   feeds.forEach((feed) => {
-    const div = document.createElement('div')
-    div.classList.add('mb-3')
+    const wrapper = document.createElement('div')
 
-    div.innerHTML = `
+    wrapper.classList.add('mb-3')
+
+    wrapper.innerHTML = `
       <h3>${feed.title}</h3>
       <p>${feed.description}</p>
     `
 
-    container.append(div)
+    container.append(wrapper)
   })
 }
 
-const renderPosts = (posts, viewed, container, handlers) => {
+const renderPosts = (posts, viewedPosts, container) => {
   container.innerHTML = ''
 
   posts.forEach((post) => {
-    const li = document.createElement('li')
-    li.classList.add(
+    const listItem = document.createElement('li')
+
+    listItem.classList.add(
       'list-group-item',
       'd-flex',
       'justify-content-between',
       'align-items-start',
     )
 
-    const a = document.createElement('a')
-    a.href = post.link
-    a.textContent = post.title
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
+    const postLink = document.createElement('a')
 
-    const isViewed = viewed.includes(post.id)
+    postLink.href = post.link
+    postLink.textContent = post.title
+    postLink.target = '_blank'
+    postLink.rel = 'noopener noreferrer'
 
-    a.classList.toggle('fw-bold', !isViewed)
-    a.classList.toggle('fw-normal', isViewed)
-    a.classList.toggle('link-secondary', isViewed)
+    postLink.dataset.id = post.id
+    postLink.classList.add('post-link')
 
-    a.addEventListener('click', () => {
-      handlers.handlePostClick(post.id)
-    })
+    const isViewed = viewedPosts.includes(post.id)
 
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.textContent = 'Просмотр'
-    button.classList.add('btn', 'btn-outline-primary', 'btn-sm')
+    postLink.classList.toggle('fw-bold', !isViewed)
+    postLink.classList.toggle('fw-normal', isViewed)
+    postLink.classList.toggle('link-secondary', isViewed)
 
-    button.addEventListener('click', () => {
-      handlers.handleOpenModal(post.id)
-    })
+    const previewButton = document.createElement('button')
 
-    li.append(a, button)
-    container.append(li)
+    previewButton.type = 'button'
+    previewButton.textContent = 'Просмотр'
+
+    previewButton.classList.add(
+      'btn',
+      'btn-outline-primary',
+      'btn-sm',
+      'post-preview-button',
+    )
+
+    previewButton.dataset.id = post.id
+
+    listItem.append(postLink, previewButton)
+
+    container.append(listItem)
   })
 }
 
@@ -97,7 +108,7 @@ const renderModal = (post, elements) => {
   Modal.getOrCreateInstance(elements.modal).show()
 }
 
-export default (path, value, state, elements, handlers) => {
+export default (path, changedValue, state, elements) => {
   if (path.startsWith('feeds')) {
     renderFeeds(state.feeds, elements.feedsContainer)
   }
@@ -107,32 +118,38 @@ export default (path, value, state, elements, handlers) => {
       state.posts,
       state.ui.viewedPosts,
       elements.postsContainer,
-      handlers,
     )
   }
 
   if (path === 'ui.modal.postId') {
-    const post = state.posts.find(p => p.id === value)
-    if (!post) return
+    const post = state.posts.find(
+      postItem => postItem.id === changedValue,
+    )
+
+    if (!post) {
+      return
+    }
 
     renderModal(post, elements)
   }
 
   if (path === 'form.status') {
-    if (value === 'success') {
+    if (changedValue === 'success') {
       renderSuccess(elements)
     }
 
-    if (value === 'failed') {
+    if (changedValue === 'failed') {
       renderError(state.form.error, elements)
     }
 
-    if (['idle', 'validating', 'loading'].includes(value)) {
+    if (
+      ['idle', 'validating', 'loading'].includes(changedValue)
+    ) {
       clearFeedback(elements)
     }
   }
 
   if (path === 'form.error') {
-    renderError(value, elements)
+    renderError(changedValue, elements)
   }
 }

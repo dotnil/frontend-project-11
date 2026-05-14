@@ -27,43 +27,66 @@ const formElement = document.querySelector('form')
 const handleStateChange = (
   path,
   currentValue,
-  reactiveState,
-  handlers,
+  watchedState,
 ) => {
   renderView(
     path,
     currentValue,
-    reactiveState,
+    watchedState,
     elements,
-    handlers,
   )
 }
 
 const runApplication = () => {
   initI18n().then(() => {
-    let formHandlers
+    const watchedState = onChange(
+      state,
+      (path, currentValue) => {
+        handleStateChange(
+          path,
+          currentValue,
+          watchedState,
+        )
+      },
+    )
 
-    const reactiveState = onChange(state, (path, currentValue) => {
-      handleStateChange(
-        path,
-        currentValue,
-        reactiveState,
-        formHandlers,
-      )
-    })
-
-    formHandlers = createHandlers(
-      reactiveState,
+    const handlers = createHandlers(
+      watchedState,
       elements,
       generateId,
     )
 
     formElement.addEventListener(
       'submit',
-      formHandlers.handleSubmit,
+      handlers.handleSubmit,
     )
 
-    startUpdater(reactiveState, generateId)
+    elements.postsContainer.addEventListener(
+      'click',
+      (event) => {
+        const postLink = event.target.closest('.post-link')
+
+        if (postLink) {
+          handlers.handlePostClick(
+            Number(postLink.dataset.id),
+          )
+
+          return
+        }
+
+        const previewButton = event.target.closest(
+          '.post-preview-button',
+        )
+
+        if (previewButton) {
+          handlers.handleOpenModal(
+            Number(previewButton.dataset.id),
+          )
+        }
+      },
+    )
+
+    startUpdater(watchedState, generateId)
   })
 }
 
