@@ -1,11 +1,16 @@
 import { Modal } from 'bootstrap'
 import { i18nInstance } from './i18n.js'
+import { FORM_STATUS } from './handlers.js'
+
+const toggleValidationClass = (input, isValid) => {
+  input.classList.toggle('is-valid', isValid)
+  input.classList.toggle('is-invalid', !isValid)
+}
 
 const renderError = (error, elements) => {
   const { input, feedback } = elements
 
-  input.classList.add('is-invalid')
-  input.classList.remove('is-valid')
+  toggleValidationClass(input, false)
 
   feedback.textContent = error
   feedback.classList.add('text-danger')
@@ -15,11 +20,9 @@ const renderError = (error, elements) => {
 const renderSuccess = (elements) => {
   const { input, feedback } = elements
 
-  input.classList.remove('is-invalid')
-  input.classList.add('is-valid')
+  toggleValidationClass(input, true)
 
   feedback.textContent = i18nInstance.t('feedback.success')
-
   feedback.classList.remove('text-danger')
   feedback.classList.add('text-success')
 }
@@ -30,7 +33,6 @@ const clearFeedback = (elements) => {
   input.classList.remove('is-valid', 'is-invalid')
 
   feedback.textContent = ''
-
   feedback.classList.remove('text-danger', 'text-success')
 }
 
@@ -51,11 +53,15 @@ const renderFeeds = (feeds, container) => {
   })
 }
 
-const renderPosts = (posts, viewedPosts, container) => {
+const renderPosts = (posts, readPostIds, container) => {
   container.innerHTML = ''
 
   posts.forEach((post) => {
+    const isViewed = readPostIds.includes(post.id)
+
     const listItem = document.createElement('li')
+    const postLink = document.createElement('a')
+    const previewButton = document.createElement('button')
 
     listItem.classList.add(
       'list-group-item',
@@ -64,26 +70,20 @@ const renderPosts = (posts, viewedPosts, container) => {
       'align-items-start',
     )
 
-    const postLink = document.createElement('a')
-
     postLink.href = post.link
     postLink.textContent = post.title
     postLink.target = '_blank'
     postLink.rel = 'noopener noreferrer'
-
     postLink.dataset.id = post.id
     postLink.classList.add('post-link')
-
-    const isViewed = viewedPosts.includes(post.id)
 
     postLink.classList.toggle('fw-bold', !isViewed)
     postLink.classList.toggle('fw-normal', isViewed)
     postLink.classList.toggle('link-secondary', isViewed)
 
-    const previewButton = document.createElement('button')
-
     previewButton.type = 'button'
     previewButton.textContent = 'Просмотр'
+    previewButton.dataset.id = post.id
 
     previewButton.classList.add(
       'btn',
@@ -92,10 +92,7 @@ const renderPosts = (posts, viewedPosts, container) => {
       'post-preview-button',
     )
 
-    previewButton.dataset.id = post.id
-
     listItem.append(postLink, previewButton)
-
     container.append(listItem)
   })
 }
@@ -113,37 +110,37 @@ export default (path, changedValue, state, elements) => {
     renderFeeds(state.feeds, elements.feedsContainer)
   }
 
-  if (path.startsWith('posts') || path === 'ui.viewedPosts') {
+  if (path.startsWith('posts') || path === 'ui.readPostIds') {
     renderPosts(
       state.posts,
-      state.ui.viewedPosts,
+      state.ui.readPostIds,
       elements.postsContainer,
     )
   }
 
-  if (path === 'ui.modal.postId') {
-    const post = state.posts.find(
-      postItem => postItem.id === changedValue,
-    )
+  if (path === 'ui.openedPostId') {
+    const post = state.posts.find(({ id }) => id === changedValue)
 
-    if (!post) {
-      return
+    if (post) {
+      renderModal(post, elements)
     }
-
-    renderModal(post, elements)
   }
 
   if (path === 'form.status') {
-    if (changedValue === 'success') {
+    if (changedValue === FORM_STATUS.SUCCESS) {
       renderSuccess(elements)
     }
 
-    if (changedValue === 'failed') {
+    if (changedValue === FORM_STATUS.FAILED) {
       renderError(state.form.error, elements)
     }
 
     if (
-      ['idle', 'validating', 'loading'].includes(changedValue)
+      [
+        FORM_STATUS.IDLE,
+        FORM_STATUS.VALIDATING,
+        FORM_STATUS.LOADING,
+      ].includes(changedValue)
     ) {
       clearFeedback(elements)
     }

@@ -1,36 +1,29 @@
 import { loadFeed } from './handlers.js'
 
 const refreshFeeds = (state, generateId) => {
-  const updateTasks = state.feeds.map(feed =>
-    loadFeed(
-      feed.url,
-      state.posts,
-      generateId,
-    )
-      .then(({ posts: newPosts }) => {
-        if (newPosts.length > 0) {
-          state.posts.push(...newPosts)
+  const tasks = state.feeds.map(feed =>
+    loadFeed(feed.url, state.posts, generateId)
+      .then(({ posts }) => {
+        if (posts.length > 0) {
+          state.posts.push(...posts)
         }
       })
-      .catch(() => {
-        // background sync failure is non-critical
-        // (ошибка фонового обновления не критична)
-      }),
+      .catch(() => {}),
   )
 
-  return Promise.all(updateTasks)
+  return Promise.all(tasks)
 }
 
-export const startUpdater = (
-  state,
-  generateId,
-) => {
-  const runUpdateLoop = () => {
-    refreshFeeds(state, generateId)
-      .then(() => {
-        setTimeout(runUpdateLoop, 5000)
-      })
-  }
+const runUpdateLoop = (state, generateId) => {
+  refreshFeeds(state, generateId)
+    .finally(() => {
+      setTimeout(
+        () => runUpdateLoop(state, generateId),
+        5000,
+      )
+    })
+}
 
-  runUpdateLoop()
+export const startUpdater = (state, generateId) => {
+  runUpdateLoop(state, generateId)
 }

@@ -1,40 +1,61 @@
-const createError = (code) => {
-  const e = new Error(code)
-  e.name = 'ParsingError'
-  e.code = code
-  return e
-}
+import { createAppError } from './errors.js'
+
+const createInvalidRssError = () =>
+  createAppError('rssParsing', 'errors.invalidRss')
 
 const parseItem = (item) => {
   const title = item.querySelector('title')?.textContent
   const link = item.querySelector('link')?.textContent
   const description = item.querySelector('description')?.textContent || ''
 
-  if (!title || !link) return null
+  if (!title || !link) {
+    return null
+  }
 
   return { title, link, description }
 }
 
-export default (xml) => {
-  const doc = new DOMParser().parseFromString(xml, 'application/xml')
+const parseXml = xml =>
+  new DOMParser().parseFromString(xml, 'application/xml')
 
-  if (doc.querySelector('parsererror')) {
-    throw createError('invalidXML')
-  }
+const isParserError = doc =>
+  Boolean(doc.querySelector('parsererror'))
 
-  const channel = doc.querySelector('channel')
-  if (!channel) throw createError('invalidRSS')
+const getChannel = doc =>
+  doc.querySelector('channel')
 
+const getFeedData = (channel) => {
   const title = channel.querySelector('title')?.textContent
   const description = channel.querySelector('description')?.textContent
 
-  if (!title || !description) {
-    throw createError('invalidStructure')
-  }
+  return { title, description }
+}
 
-  const posts = Array.from(channel.querySelectorAll('item'))
+const getPosts = channel =>
+  Array.from(channel.querySelectorAll('item'))
     .map(parseItem)
     .filter(Boolean)
 
-  return { feed: { title, description }, posts }
+export default (xml) => {
+  const doc = parseXml(xml)
+
+  if (isParserError(doc)) {
+    throw createInvalidRssError()
+  }
+
+  const channel = getChannel(doc)
+
+  if (!channel) {
+    throw createInvalidRssError()
+  }
+
+  const feed = getFeedData(channel)
+
+  if (!feed.title || !feed.description) {
+    throw createInvalidRssError()
+  }
+
+  const posts = getPosts(channel)
+
+  return { feed, posts }
 }

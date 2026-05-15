@@ -5,11 +5,12 @@ import onChange from 'on-change'
 
 import renderView from './view.js'
 import { createHandlers } from './handlers.js'
-import { createInitialState, generateId } from './state.js'
+import { createInitialState, createIdGenerator } from './state.js'
 import { startUpdater } from './updater.js'
 import { initI18n } from './i18n.js'
 import { initEvents } from './events.js'
 
+const generateId = createIdGenerator()
 const state = createInitialState()
 
 const elements = {
