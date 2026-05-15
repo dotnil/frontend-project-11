@@ -5,13 +5,24 @@ export const initEvents = (
 ) => {
   formElement.addEventListener(
     'submit',
-    handlers.handleSubmit,
+    (event) => {
+      event.preventDefault()
+
+      const url = elements.input.value.trim()
+
+      handlers.handleSubmit(url)
+        .then(() => {
+          elements.input.value = ''
+        })
+    },
   )
 
   elements.postsContainer.addEventListener(
     'click',
     (event) => {
-      const postLink = event.target.closest('.post-link')
+      const postLink = event.target.closest(
+        '.post-link',
+      )
 
       if (postLink) {
         handlers.handlePostClick(

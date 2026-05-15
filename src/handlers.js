@@ -3,7 +3,10 @@ import { fetchRss } from './api.js'
 import parseRss from './parser.js'
 import { i18nInstance } from './i18n.js'
 
-const filterNewPosts = (posts, existingPosts) => {
+const filterNewPosts = (
+  posts,
+  existingPosts,
+) => {
   const existingLinks = new Set(
     existingPosts.map(post => post.link),
   )
@@ -45,7 +48,6 @@ export const loadFeed = (
 
 export const createHandlers = (
   state,
-  elements,
   generateId,
 ) => {
   const handleError = (error) => {
@@ -66,13 +68,9 @@ export const createHandlers = (
     state.form.status = 'failed'
   }
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
-
-    const url = elements.input.value.trim()
-
+  const handleSubmit = (url) => {
     if (!url) {
-      return
+      return Promise.resolve()
     }
 
     state.form.status = 'validating'
@@ -83,7 +81,7 @@ export const createHandlers = (
       i18nInstance.t,
     )
 
-    schema.validate({ url })
+    return schema.validate({ url })
       .then(() => {
         state.form.status = 'loading'
 
@@ -98,7 +96,6 @@ export const createHandlers = (
         state.posts.push(...posts)
 
         state.form.status = 'success'
-        elements.input.value = ''
       })
       .catch(handleError)
   }
@@ -111,6 +108,7 @@ export const createHandlers = (
 
   const handleOpenModal = (postId) => {
     handlePostClick(postId)
+
     state.ui.modal.postId = postId
   }
 

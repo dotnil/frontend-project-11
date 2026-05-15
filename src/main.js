@@ -53,7 +53,6 @@ const runApplication = () => {
 
     const handlers = createHandlers(
       watchedState,
-      elements,
       generateId,
     )
 
