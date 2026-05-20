@@ -1,4 +1,4 @@
-import { buildSchema } from './validation.js'
+import { createFeedSchema } from './validation.js'
 import { fetchRss } from './api.js'
 import parseRss from './parser.js'
 import { i18nInstance } from './i18n.js'
@@ -35,15 +35,11 @@ export const loadFeed = (url, existingPosts, generateId) =>
       }
     })
 
-const setFormStatus = (state, status) => {
-  state.form.status = status
-}
-
-const handleError = (state, error) => {
+const updateFormError = (state, error) => {
   const normalized = normalizeError(error, i18nInstance.t)
 
   state.form.error = normalized.message
-  setFormStatus(state, FORM_STATUS.FAILED)
+  state.form.status = FORM_STATUS.FAILED
 }
 
 export const createHandlers = (state, generateId) => {
@@ -53,16 +49,13 @@ export const createHandlers = (state, generateId) => {
     }
 
     state.form.error = null
-    setFormStatus(state, FORM_STATUS.VALIDATING)
+    state.form.status = FORM_STATUS.VALIDATING
 
-    const schema = buildSchema(
-      state.feeds.map(feed => feed.url),
-      i18nInstance.t,
-    )
+    const schema = createFeedSchema(state.feeds.map(feed => feed.url), i18nInstance.t)
 
     return schema.validate({ url })
       .then(() => {
-        setFormStatus(state, FORM_STATUS.LOADING)
+        state.form.status = FORM_STATUS.LOADING
 
         return loadFeed(url, state.posts, generateId)
       })
@@ -70,25 +63,25 @@ export const createHandlers = (state, generateId) => {
         state.feeds.push(feed)
         state.posts.push(...posts)
 
-        setFormStatus(state, FORM_STATUS.SUCCESS)
+        state.form.status = FORM_STATUS.SUCCESS
       })
-      .catch(error => handleError(state, error))
+      .catch(error => updateFormError(state, error))
   }
 
-  const handlePostClick = (postId) => {
+  const markPostAsRead = (postId) => {
     if (!state.ui.readPostIds.includes(postId)) {
       state.ui.readPostIds.push(postId)
     }
   }
 
-  const handleOpenModal = (postId) => {
-    handlePostClick(postId)
+  const openPostModal = (postId) => {
+    markPostAsRead(postId)
     state.ui.openedPostId = postId
   }
 
   return {
     handleSubmit,
-    handlePostClick,
-    handleOpenModal,
+    markPostAsRead,
+    openPostModal,
   }
 }

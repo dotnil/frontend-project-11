@@ -3,7 +3,7 @@ import { createAppError } from './errors.js'
 const createInvalidRssError = () =>
   createAppError('rssParsing', 'errors.invalidRss')
 
-const parseItem = (item) => {
+const parsePost = (item) => {
   const title = item.querySelector('title')?.textContent
   const link = item.querySelector('link')?.textContent
   const description = item.querySelector('description')?.textContent || ''
@@ -18,28 +18,28 @@ const parseItem = (item) => {
 const parseXml = xml =>
   new DOMParser().parseFromString(xml, 'application/xml')
 
-const isParserError = doc =>
+const isRssParsingError = doc =>
   Boolean(doc.querySelector('parsererror'))
 
 const getChannel = doc =>
   doc.querySelector('channel')
 
-const getFeedData = (channel) => {
+const parseFeed = (channel) => {
   const title = channel.querySelector('title')?.textContent
   const description = channel.querySelector('description')?.textContent
 
   return { title, description }
 }
 
-const getPosts = channel =>
+const parsePosts = channel =>
   Array.from(channel.querySelectorAll('item'))
-    .map(parseItem)
+    .map(parsePost)
     .filter(Boolean)
 
-export default (xml) => {
+const parseRss = (xml) => {
   const doc = parseXml(xml)
 
-  if (isParserError(doc)) {
+  if (isRssParsingError(doc)) {
     throw createInvalidRssError()
   }
 
@@ -49,13 +49,15 @@ export default (xml) => {
     throw createInvalidRssError()
   }
 
-  const feed = getFeedData(channel)
+  const feed = parseFeed(channel)
 
   if (!feed.title || !feed.description) {
     throw createInvalidRssError()
   }
 
-  const posts = getPosts(channel)
+  const posts = parsePosts(channel)
 
   return { feed, posts }
 }
+
+export default parseRss

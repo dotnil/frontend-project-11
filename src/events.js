@@ -1,59 +1,36 @@
-const handleFormSubmit = (
-  event,
-  elements,
-  handlers,
-) => {
+const handleFormSubmit = (event, dom, handlers) => {
   event.preventDefault()
 
-  const url = elements.input.value.trim()
+  const url = dom.input.value.trim()
 
   handlers.handleSubmit(url)
     .then(() => {
-      elements.input.value = ''
+      dom.input.value = ''
+      dom.input.focus()
     })
 }
 
-const handlePostsClick = (
-  event,
-  handlers,
-) => {
+const handlePostsContainerClick = (event, handlers) => {
   const postLink = event.target.closest('.post-link')
 
   if (postLink) {
-    handlers.handlePostClick(Number(postLink.dataset.id))
+    handlers.markPostAsRead(Number(postLink.dataset.id))
     return
   }
 
-  const previewButton = event.target.closest(
-    '.post-preview-button',
-  )
+  const previewButton = event.target.closest('.post-preview-button')
 
   if (previewButton) {
-    handlers.handleOpenModal(
-      Number(previewButton.dataset.id),
-    )
+    handlers.openPostModal(Number(previewButton.dataset.id))
   }
 }
 
-export const initEvents = (
-  elements,
-  formElement,
-  handlers,
-) => {
-  formElement.addEventListener(
-    'submit',
-    event => handleFormSubmit(
-      event,
-      elements,
-      handlers,
-    ),
-  )
+export const initEvents = (dom, handlers) => {
+  dom.form.addEventListener('submit', (event) => {
+    handleFormSubmit(event, dom, handlers)
+  })
 
-  elements.postsContainer.addEventListener(
-    'click',
-    event => handlePostsClick(
-      event,
-      handlers,
-    ),
-  )
+  dom.postsContainer.addEventListener('click', (event) => {
+    handlePostsContainerClick(event, handlers)
+  })
 }

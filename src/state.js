@@ -1,7 +1,7 @@
 export const createIdGenerator = () => {
-  let id = 1
+  let nextId = 1
 
-  return () => id++
+  return () => nextId++
 }
 
 export const createInitialState = () => ({

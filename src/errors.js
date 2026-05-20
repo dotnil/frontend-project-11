@@ -1,5 +1,5 @@
-export const createAppError = (type, message) => {
-  const error = new Error(message)
+export const createAppError = (type, messageKey) => {
+  const error = new Error(messageKey)
 
   error.type = type
 
@@ -9,26 +9,23 @@ export const createAppError = (type, message) => {
 export const isValidationError = error =>
   error.name === 'ValidationError'
 
-export const isParsingError = error =>
+export const isRssParsingError = error =>
   error.type === 'rssParsing'
 
-const normalizeParsingError = (error, translateText) =>
-  createAppError(
-    'rssParsing',
-    translateText(error.message),
-  )
+const translateParsingError = (error, t) =>
+  createAppError('rssParsing', t(error.message))
 
-export const normalizeError = (error, translateText) => {
+export const normalizeError = (error, t) => {
   if (isValidationError(error)) {
     return createAppError('validation', error.message)
   }
 
-  if (isParsingError(error)) {
-    return normalizeParsingError(error, translateText)
+  if (isRssParsingError(error)) {
+    return translateParsingError(error, t)
   }
 
   return createAppError(
     'network',
-    translateText('errors.networkError'),
+    t('errors.networkError'),
   )
 }

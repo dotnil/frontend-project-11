@@ -2,151 +2,157 @@ import { Modal } from 'bootstrap'
 import { i18nInstance } from './i18n.js'
 import { FORM_STATUS } from './handlers.js'
 
+const statusesWithoutFeedback = [
+  FORM_STATUS.IDLE,
+  FORM_STATUS.VALIDATING,
+  FORM_STATUS.LOADING,
+]
+
 const toggleValidationClass = (input, isValid) => {
   input.classList.toggle('is-valid', isValid)
   input.classList.toggle('is-invalid', !isValid)
 }
 
-const renderError = (error, elements) => {
-  const { input, feedback } = elements
+const renderError = (error, dom) => {
+  const { input, feedback } = dom
 
   toggleValidationClass(input, false)
-
   feedback.textContent = error
+
   feedback.classList.add('text-danger')
   feedback.classList.remove('text-success')
 }
 
-const renderSuccess = (elements) => {
-  const { input, feedback } = elements
+const renderSuccess = (dom) => {
+  const { input, feedback } = dom
 
   toggleValidationClass(input, true)
-
   feedback.textContent = i18nInstance.t('feedback.success')
+
   feedback.classList.remove('text-danger')
   feedback.classList.add('text-success')
 }
 
-const clearFeedback = (elements) => {
-  const { input, feedback } = elements
+const clearFeedback = (dom) => {
+  const { input, feedback } = dom
 
   input.classList.remove('is-valid', 'is-invalid')
-
   feedback.textContent = ''
+
   feedback.classList.remove('text-danger', 'text-success')
 }
 
 const renderFeeds = (feeds, container) => {
-  container.innerHTML = ''
+  if (feeds.length === 0) {
+    container.innerHTML = ''
+    return
+  }
 
-  feeds.forEach((feed) => {
-    const wrapper = document.createElement('div')
+  container.innerHTML = `
+    <h2 class="h4 mb-3">Фиды</h2>
 
-    wrapper.classList.add('mb-3')
-
-    wrapper.innerHTML = `
-      <h3>${feed.title}</h3>
-      <p>${feed.description}</p>
-    `
-
-    container.append(wrapper)
-  })
+    ${feeds.map(feed => `
+      <div class="mb-3">
+        <h3 class="h6">${feed.title}</h3>
+        <p class="text-muted small mb-0">${feed.description}</p>
+      </div>
+    `).join('')}
+  `
 }
 
 const renderPosts = (posts, readPostIds, container) => {
-  container.innerHTML = ''
+  if (posts.length === 0) {
+    container.innerHTML = ''
+    return
+  }
+
+  container.innerHTML = `
+    <h2 class="h4 mb-3">Посты</h2>
+    <ul class="list-group"></ul>
+  `
+
+  const list = container.querySelector('ul')
 
   posts.forEach((post) => {
-    const isViewed = readPostIds.includes(post.id)
+    const isRead = readPostIds.includes(post.id)
 
-    const listItem = document.createElement('li')
-    const postLink = document.createElement('a')
-    const previewButton = document.createElement('button')
+    const linkClass = isRead
+      ? 'fw-normal link-secondary'
+      : 'fw-bold'
 
-    listItem.classList.add(
+    const postElement = document.createElement('li')
+
+    postElement.classList.add(
       'list-group-item',
+      'border-0',
       'd-flex',
       'justify-content-between',
       'align-items-start',
+      'px-0',
     )
 
-    postLink.href = post.link
-    postLink.textContent = post.title
-    postLink.target = '_blank'
-    postLink.rel = 'noopener noreferrer'
-    postLink.dataset.id = post.id
-    postLink.classList.add('post-link')
+    postElement.innerHTML = `
+      <a href="${post.link}"
+         target="_blank"
+         rel="noopener noreferrer"
+         data-id="${post.id}"
+         class="${linkClass}">
+        ${post.title}
+      </a>
 
-    postLink.classList.toggle('fw-bold', !isViewed)
-    postLink.classList.toggle('fw-normal', isViewed)
-    postLink.classList.toggle('link-secondary', isViewed)
+      <button type="button"
+              data-id="${post.id}"
+              class="btn btn-outline-primary btn-sm post-preview-button">
+        ${i18nInstance.t('buttons.view')}
+      </button>
+    `
 
-    previewButton.type = 'button'
-    previewButton.textContent = 'Просмотр'
-    previewButton.dataset.id = post.id
-
-    previewButton.classList.add(
-      'btn',
-      'btn-outline-primary',
-      'btn-sm',
-      'post-preview-button',
-    )
-
-    listItem.append(postLink, previewButton)
-    container.append(listItem)
+    list.append(postElement)
   })
 }
 
-const renderModal = (post, elements) => {
-  elements.modalTitle.textContent = post.title
-  elements.modalDescription.textContent = post.description
-  elements.modalLink.href = post.link
+const showPostModal = (post, dom) => {
+  dom.modalTitle.textContent = post.title
+  dom.modalDescription.textContent = post.description
+  dom.modalLink.href = post.link
 
-  Modal.getOrCreateInstance(elements.modal).show()
+  Modal.getOrCreateInstance(dom.modal).show()
 }
 
-export default (path, changedValue, state, elements) => {
+const renderView = (path, value, state, dom) => {
   if (path.startsWith('feeds')) {
-    renderFeeds(state.feeds, elements.feedsContainer)
+    renderFeeds(state.feeds, dom.feedsContainer)
   }
 
   if (path.startsWith('posts') || path === 'ui.readPostIds') {
-    renderPosts(
-      state.posts,
-      state.ui.readPostIds,
-      elements.postsContainer,
-    )
+    renderPosts(state.posts, state.ui.readPostIds, dom.postsContainer)
   }
 
   if (path === 'ui.openedPostId') {
-    const post = state.posts.find(({ id }) => id === changedValue)
+    const post = state.posts.find(({ id }) => id === value)
 
     if (post) {
-      renderModal(post, elements)
+      showPostModal(post, dom)
     }
   }
 
   if (path === 'form.status') {
-    if (changedValue === FORM_STATUS.SUCCESS) {
-      renderSuccess(elements)
+    if (value === FORM_STATUS.SUCCESS) {
+      renderSuccess(dom)
     }
 
-    if (changedValue === FORM_STATUS.FAILED) {
-      renderError(state.form.error, elements)
+    if (value === FORM_STATUS.FAILED) {
+      renderError(state.form.error, dom)
     }
 
-    if (
-      [
-        FORM_STATUS.IDLE,
-        FORM_STATUS.VALIDATING,
-        FORM_STATUS.LOADING,
-      ].includes(changedValue)
-    ) {
-      clearFeedback(elements)
+    if (statusesWithoutFeedback.includes(value)) {
+      clearFeedback(dom)
     }
   }
 
   if (path === 'form.error') {
-    renderError(changedValue, elements)
+    renderError(value, dom)
   }
 }
+
+export default renderView

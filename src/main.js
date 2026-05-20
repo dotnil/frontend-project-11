@@ -13,7 +13,8 @@ import { initEvents } from './events.js'
 const generateId = createIdGenerator()
 const state = createInitialState()
 
-const elements = {
+const dom = {
+  form: document.querySelector('form'),
   input: document.querySelector('#url-input'),
   feedback: document.querySelector('#feedback'),
   feedsContainer: document.querySelector('#feeds'),
@@ -24,47 +25,18 @@ const elements = {
   modalLink: document.querySelector('.modal-link'),
 }
 
-const formElement = document.querySelector('form')
-
-const handleStateChange = (
-  path,
-  currentValue,
-  watchedState,
-) => {
-  renderView(
-    path,
-    currentValue,
-    watchedState,
-    elements,
-  )
-}
-
-const runApplication = () => {
+const initApp = () => {
   initI18n().then(() => {
-    const watchedState = onChange(
-      state,
-      (path, currentValue) => {
-        handleStateChange(
-          path,
-          currentValue,
-          watchedState,
-        )
-      },
-    )
+    const watchedState = onChange(state, (path, currentValue) => {
+      renderView(path, currentValue, watchedState, dom)
+    })
 
-    const handlers = createHandlers(
-      watchedState,
-      generateId,
-    )
+    const handlers = createHandlers(watchedState, generateId)
 
-    initEvents(
-      elements,
-      formElement,
-      handlers,
-    )
+    initEvents(dom, handlers)
 
     startUpdater(watchedState, generateId)
   })
 }
 
-runApplication()
+initApp()
