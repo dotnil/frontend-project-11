@@ -1,65 +1,87 @@
-import { buildSchema } from './validation.js'
-import { rssService } from './rssService.js'
+import { createFeedSchema } from './validation.js'
+import { fetchRss } from './api.js'
+import parseRss from './parser.js'
 import { i18nInstance } from './i18n.js'
+import { normalizeError } from './errors.js'
 
-export const createHandlers = (state, elements, generateId) => {
-  const handleError = (error) => {
-    if (error.name === 'ValidationError') {
-      state.form.error = error.message
+export const FORM_STATUS = {
+  IDLE: 'idle',
+  VALIDATING: 'validating',
+  LOADING: 'loading',
+  SUCCESS: 'success',
+  FAILED: 'failed',
+}
+
+const filterNewPosts = (posts, existingPosts) => {
+  const existingLinks = new Set(existingPosts.map(post => post.link))
+
+  return posts.filter(post => !existingLinks.has(post.link))
+}
+
+export const loadFeed = (url, existingPosts, generateId) =>
+  fetchRss(url)
+    .then(response => response.data.contents)
+    .then(parseRss)
+    .then(({ feed, posts }) => {
+      const feedId = generateId()
+
+      return {
+        feed: { ...feed, id: feedId, url },
+        posts: filterNewPosts(posts, existingPosts).map(post => ({
+          ...post,
+          id: generateId(),
+          feedId,
+        })),
+      }
+    })
+
+const updateFormError = (state, error) => {
+  const normalized = normalizeError(error, i18nInstance.t)
+
+  state.form.error = normalized.message
+  state.form.status = FORM_STATUS.FAILED
+}
+
+export const createHandlers = (state, generateId) => {
+  const handleSubmit = (url) => {
+    if (!url) {
+      return Promise.resolve()
     }
-    else if (error.name === 'ParsingError') {
-      state.form.error = i18nInstance.t('errors.invalidRss')
-    }
-    else {
-      state.form.error = i18nInstance.t('errors.networkError')
-    }
 
-    state.form.status = 'failed'
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    const url = elements.input.value.trim()
-    if (!url) return
-
-    state.form.status = 'validating'
     state.form.error = null
+    state.form.status = FORM_STATUS.VALIDATING
 
-    const schema = buildSchema(
-      state.feeds.map(f => f.url),
-      i18nInstance.t,
-    )
+    const schema = createFeedSchema(state.feeds.map(feed => feed.url), i18nInstance.t)
 
-    schema.validate({ url })
+    return schema.validate({ url })
       .then(() => {
-        state.form.status = 'loading'
-        return rssService(url, state.posts, generateId)
+        state.form.status = FORM_STATUS.LOADING
+
+        return loadFeed(url, state.posts, generateId)
       })
       .then(({ feed, posts }) => {
         state.feeds.push(feed)
         state.posts.push(...posts)
 
-        state.form.status = 'success'
-        elements.input.value = ''
+        state.form.status = FORM_STATUS.SUCCESS
       })
-      .catch(handleError)
+      .catch(error => updateFormError(state, error))
   }
 
-  const handlePostClick = (id) => {
-    if (!state.ui.viewedPosts.includes(id)) {
-      state.ui.viewedPosts.push(id)
+  const markPostAsRead = (postId) => {
+    if (!state.ui.readPostIds.includes(postId)) {
+      state.ui.readPostIds.push(postId)
     }
   }
 
-  const handleOpenModal = (id) => {
-    handlePostClick(id)
-    state.ui.modal.postId = id
+  const openPostModal = (postId) => {
+    markPostAsRead(postId)
+    state.ui.openedPostId = postId
   }
 
   return {
     handleSubmit,
-    handlePostClick,
-    handleOpenModal,
+    markPostAsRead,
+    openPostModal,
   }
 }

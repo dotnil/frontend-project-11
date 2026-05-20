@@ -4,43 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSS Aggregator</title>
-
   </head>
 
-  <body>
-    <main class="container mt-4">
-      <h1>RSS агрегатор</h1>
-      <p>Начните читать RSS сегодня! Это легко, это красиво.</p>
+  <body class="min-vh-100 d-flex flex-column">
+    <main class="flex-grow-1">
+      <section class="container-fluid bg-dark p-5">
+        <div class="row">
+          <div class="col-md-10 col-lg-8 mx-auto text-white">
+            <h1 class="display-3 mb-0">RSS агрегатор</h1>
 
-      <form class="mb-3">
-        <label for="url-input" class="form-label">Ссылка RSS</label>
-        <input
-          id="url-input"
-          aria-label="url"
-          type="text"
-          name="url"
-          required
-          placeholder="https://example.com/feed"
-          class="form-control"
-        >
-        <button class="btn btn-primary mt-2" type="submit">Добавить</button>
-      </form>
+            <p class="lead">
+              Начните читать RSS сегодня! Это легко, это красиво.
+            </p>
 
-      <p id="feedback" class="feedback"></p>
+            <form class="rss-form text-body">
+              <div class="row">
+                <div class="col">
+                  <div class="form-floating">
+                    <input
+                      id="url-input"
+                      class="form-control form-control-lg"
+                      aria-label="url"
+                      type="text"
+                      name="url"
+                      required
+                      autofocus
+                    >
+                    <label for="url-input">Ссылка RSS</label>
+                  </div>
+                </div>
 
-      <section id="feeds" class="feeds mb-4"></section>
-      <section id="posts" class="posts mb-4"></section>
+                <div class="col-auto">
+                  <button class="btn btn-primary btn-lg" type="submit">
+                    Добавить
+                  </button>
+                </div>
+              </div>
+            </form>
 
-      <p>Пример: https://lorem-rss.hexlet.app/feed</p>
+            <p class="mt-2 mb-0 text-secondary">
+              Пример: https://lorem-rss.hexlet.app/feed
+            </p>
+
+            <p id="feedback" class="feedback m-0 position-absolute small"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="container-fluid container-xxl p-5">
+        <div class="row">
+          <div class="col-lg-8 order-1 mx-auto">
+            <div id="posts" class="posts"></div>
+          </div>
+
+          <div class="col-lg-4 order-0 order-lg-1">
+            <div id="feeds" class="feeds"></div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div class="modal fade" id="modal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
-
           <div class="modal-header">
             <h5 class="modal-title"></h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
 
           <div class="modal-body">
@@ -49,10 +83,10 @@
 
           <div class="modal-footer">
             <a
+              class="btn btn-primary modal-link"
               href="#"
               target="_blank"
               rel="noopener noreferrer"
-              class="btn btn-primary modal-link"
             >
               Читать полностью
             </a>
@@ -65,7 +99,6 @@
               Закрыть
             </button>
           </div>
-
         </div>
       </div>
     </div>

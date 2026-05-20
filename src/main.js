@@ -1,15 +1,20 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
-import onChange from 'on-change'
-import initView from './view.js'
-import initApp from './init.js'
-import { createInitialState, generateId } from './state.js'
-import { startUpdater } from './updater.js'
-import { initI18n } from './i18n.js'
 import 'bootstrap'
 
+import onChange from 'on-change'
+
+import renderView from './view.js'
+import { createHandlers } from './handlers.js'
+import { createInitialState, createIdGenerator } from './state.js'
+import { startUpdater } from './updater.js'
+import { initI18n } from './i18n.js'
+import { initEvents } from './events.js'
+
+const generateId = createIdGenerator()
 const state = createInitialState()
 
-const elements = {
+const dom = {
+  form: document.querySelector('form'),
   input: document.querySelector('#url-input'),
   feedback: document.querySelector('#feedback'),
   feedsContainer: document.querySelector('#feeds'),
@@ -20,12 +25,18 @@ const elements = {
   modalLink: document.querySelector('.modal-link'),
 }
 
-initI18n().then(() => {
-  const watchedState = onChange(state, (path, value) => {
-    initView(path, value, watchedState, elements, handlers)
+const initApp = () => {
+  initI18n().then(() => {
+    const watchedState = onChange(state, (path, currentValue) => {
+      renderView(path, currentValue, watchedState, dom)
+    })
+
+    const handlers = createHandlers(watchedState, generateId)
+
+    initEvents(dom, handlers)
+
+    startUpdater(watchedState, generateId)
   })
+}
 
-  const handlers = initApp(watchedState, elements, generateId)
-
-  startUpdater(watchedState, generateId)
-})
+initApp()

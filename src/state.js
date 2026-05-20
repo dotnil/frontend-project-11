@@ -1,7 +1,8 @@
-export const generateId = (() => {
-  let id = 1
-  return () => id++
-})()
+export const createIdGenerator = () => {
+  let nextId = 1
+
+  return () => nextId++
+}
 
 export const createInitialState = () => ({
   feeds: [],
@@ -11,9 +12,7 @@ export const createInitialState = () => ({
     error: null,
   },
   ui: {
-    viewedPosts: [],
-    modal: {
-      postId: null,
-    },
+    readPostIds: [],
+    openedPostId: null,
   },
 })

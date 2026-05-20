@@ -1,138 +1,158 @@
 import { Modal } from 'bootstrap'
 import { i18nInstance } from './i18n.js'
+import { FORM_STATUS } from './handlers.js'
 
-const renderError = (error, elements) => {
-  const { input, feedback } = elements
+const statusesWithoutFeedback = [
+  FORM_STATUS.IDLE,
+  FORM_STATUS.VALIDATING,
+  FORM_STATUS.LOADING,
+]
 
-  input.classList.add('is-invalid')
-  input.classList.remove('is-valid')
+const toggleValidationClass = (input, isValid) => {
+  input.classList.toggle('is-valid', isValid)
+  input.classList.toggle('is-invalid', !isValid)
+}
 
+const renderError = (error, dom) => {
+  const { input, feedback } = dom
+
+  toggleValidationClass(input, false)
   feedback.textContent = error
+
   feedback.classList.add('text-danger')
   feedback.classList.remove('text-success')
 }
 
-const renderSuccess = (elements) => {
-  const { input, feedback } = elements
+const renderSuccess = (dom) => {
+  const { input, feedback } = dom
 
-  input.classList.remove('is-invalid')
-  input.classList.add('is-valid')
-
+  toggleValidationClass(input, true)
   feedback.textContent = i18nInstance.t('feedback.success')
+
   feedback.classList.remove('text-danger')
   feedback.classList.add('text-success')
 }
 
-const clearFeedback = (elements) => {
-  const { input, feedback } = elements
+const clearFeedback = (dom) => {
+  const { input, feedback } = dom
 
   input.classList.remove('is-valid', 'is-invalid')
   feedback.textContent = ''
+
   feedback.classList.remove('text-danger', 'text-success')
 }
 
 const renderFeeds = (feeds, container) => {
-  container.innerHTML = ''
+  if (feeds.length === 0) {
+    container.innerHTML = ''
+    return
+  }
 
-  feeds.forEach((feed) => {
-    const div = document.createElement('div')
-    div.classList.add('mb-3')
+  container.innerHTML = `
+    <h2 class="h4 mb-3">Фиды</h2>
 
-    div.innerHTML = `
-      <h3>${feed.title}</h3>
-      <p>${feed.description}</p>
-    `
-
-    container.append(div)
-  })
+    ${feeds.map(feed => `
+      <div class="mb-3">
+        <h3 class="h6">${feed.title}</h3>
+        <p class="text-muted small mb-0">${feed.description}</p>
+      </div>
+    `).join('')}
+  `
 }
 
-const renderPosts = (posts, viewed, container, handlers) => {
-  container.innerHTML = ''
+const renderPosts = (posts, readPostIds, container) => {
+  if (posts.length === 0) {
+    container.innerHTML = ''
+    return
+  }
+
+  container.innerHTML = `
+    <h2 class="h4 mb-3">Посты</h2>
+    <ul class="list-group"></ul>
+  `
+
+  const list = container.querySelector('ul')
 
   posts.forEach((post) => {
-    const li = document.createElement('li')
-    li.classList.add(
+    const isRead = readPostIds.includes(post.id)
+
+    const linkClass = isRead
+      ? 'fw-normal link-secondary'
+      : 'fw-bold'
+
+    const postElement = document.createElement('li')
+
+    postElement.classList.add(
       'list-group-item',
+      'border-0',
       'd-flex',
       'justify-content-between',
       'align-items-start',
+      'px-0',
     )
 
-    const a = document.createElement('a')
-    a.href = post.link
-    a.textContent = post.title
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
+    postElement.innerHTML = `
+      <a href="${post.link}"
+         target="_blank"
+         rel="noopener noreferrer"
+         data-id="${post.id}"
+         class="${linkClass}">
+        ${post.title}
+      </a>
 
-    const isViewed = viewed.includes(post.id)
+      <button type="button"
+              data-id="${post.id}"
+              class="btn btn-outline-primary btn-sm post-preview-button">
+        ${i18nInstance.t('buttons.view')}
+      </button>
+    `
 
-    a.classList.toggle('fw-bold', !isViewed)
-    a.classList.toggle('fw-normal', isViewed)
-    a.classList.toggle('link-secondary', isViewed)
-
-    a.addEventListener('click', () => {
-      handlers.handlePostClick(post.id)
-    })
-
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.textContent = 'Просмотр'
-    button.classList.add('btn', 'btn-outline-primary', 'btn-sm')
-
-    button.addEventListener('click', () => {
-      handlers.handleOpenModal(post.id)
-    })
-
-    li.append(a, button)
-    container.append(li)
+    list.append(postElement)
   })
 }
 
-const renderModal = (post, elements) => {
-  elements.modalTitle.textContent = post.title
-  elements.modalDescription.textContent = post.description
-  elements.modalLink.href = post.link
+const showPostModal = (post, dom) => {
+  dom.modalTitle.textContent = post.title
+  dom.modalDescription.textContent = post.description
+  dom.modalLink.href = post.link
 
-  Modal.getOrCreateInstance(elements.modal).show()
+  Modal.getOrCreateInstance(dom.modal).show()
 }
 
-export default (path, value, state, elements, handlers) => {
+const renderView = (path, value, state, dom) => {
   if (path.startsWith('feeds')) {
-    renderFeeds(state.feeds, elements.feedsContainer)
+    renderFeeds(state.feeds, dom.feedsContainer)
   }
 
-  if (path.startsWith('posts') || path === 'ui.viewedPosts') {
-    renderPosts(
-      state.posts,
-      state.ui.viewedPosts,
-      elements.postsContainer,
-      handlers,
-    )
+  if (path.startsWith('posts') || path === 'ui.readPostIds') {
+    renderPosts(state.posts, state.ui.readPostIds, dom.postsContainer)
   }
 
-  if (path === 'ui.modal.postId') {
-    const post = state.posts.find(p => p.id === value)
-    if (!post) return
+  if (path === 'ui.openedPostId') {
+    const post = state.posts.find(({ id }) => id === value)
 
-    renderModal(post, elements)
+    if (post) {
+      showPostModal(post, dom)
+    }
   }
 
   if (path === 'form.status') {
-    if (value === 'success') {
-      renderSuccess(elements)
+    if (value === FORM_STATUS.SUCCESS) {
+      renderSuccess(dom)
     }
 
-    if (value === 'failed') {
-      renderError(state.form.error, elements)
+    if (value === FORM_STATUS.FAILED) {
+      renderError(state.form.error, dom)
     }
 
-    if (['idle', 'validating', 'loading'].includes(value)) {
-      clearFeedback(elements)
+    if (statusesWithoutFeedback.includes(value)) {
+      clearFeedback(dom)
     }
   }
 
   if (path === 'form.error') {
-    renderError(value, elements)
+    renderError(value, dom)
   }
 }
+
+export default renderView

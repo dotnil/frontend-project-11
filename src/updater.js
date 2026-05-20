@@ -1,29 +1,29 @@
-import { rssService } from './rssService.js'
+import { loadFeed } from './handlers.js'
 
-const updateAll = async (state, generateId) => {
-  for (const feed of state.feeds) {
-    try {
-      const { posts } = await rssService(
-        feed.url,
-        state.posts,
-        generateId,
+const refreshFeeds = (state, generateId) => {
+  const tasks = state.feeds.map(feed =>
+    loadFeed(feed.url, state.posts, generateId)
+      .then(({ posts }) => {
+        if (posts.length > 0) {
+          state.posts.push(...posts)
+        }
+      })
+      .catch(() => {}),
+  )
+
+  return Promise.all(tasks)
+}
+
+const runUpdateLoop = (state, generateId) => {
+  refreshFeeds(state, generateId)
+    .finally(() => {
+      setTimeout(
+        () => runUpdateLoop(state, generateId),
+        5000,
       )
-
-      if (posts.length) {
-        state.posts.push(...posts)
-      }
-    }
-    catch {
-      // ignore
-    }
-  }
+    })
 }
 
 export const startUpdater = (state, generateId) => {
-  const run = async () => {
-    await updateAll(state, generateId)
-    setTimeout(run, 5000)
-  }
-
-  run()
+  runUpdateLoop(state, generateId)
 }
