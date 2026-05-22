@@ -49,12 +49,12 @@ const renderFeeds = (feeds, container) => {
   }
 
   container.innerHTML = `
-    <h2 class="h4 mb-3">Фиды</h2>
+    <h2 class='h4 mb-3'>Фиды</h2>
 
     ${feeds.map(feed => `
-      <div class="mb-3">
-        <h3 class="h6">${feed.title}</h3>
-        <p class="text-muted small mb-0">${feed.description}</p>
+      <div class='mb-3'>
+        <h3 class='h6'>${feed.title}</h3>
+        <p class='text-muted small mb-0'>${feed.description}</p>
       </div>
     `).join('')}
   `
@@ -67,8 +67,8 @@ const renderPosts = (posts, readPostIds, container) => {
   }
 
   container.innerHTML = `
-    <h2 class="h4 mb-3">Посты</h2>
-    <ul class="list-group"></ul>
+    <h2 class='h4 mb-3'>Посты</h2>
+    <ul class='list-group'></ul>
   `
 
   const list = container.querySelector('ul')
@@ -92,17 +92,17 @@ const renderPosts = (posts, readPostIds, container) => {
     )
 
     postElement.innerHTML = `
-      <a href="${post.link}"
-         target="_blank"
-         rel="noopener noreferrer"
-         data-id="${post.id}"
-         class="${linkClass}">
+      <a href='${post.link}'
+         target='_blank'
+         rel='noopener noreferrer'
+         data-id='${post.id}'
+         class='${linkClass}'>
         ${post.title}
       </a>
 
-      <button type="button"
-              data-id="${post.id}"
-              class="btn btn-outline-primary btn-sm post-preview-button">
+      <button type='button'
+              data-id='${post.id}'
+              class='btn btn-outline-primary btn-sm post-preview-button'>
         ${i18nInstance.t('buttons.view')}
       </button>
     `
