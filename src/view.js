@@ -51,7 +51,7 @@ const renderFeeds = (feeds, container) => {
   container.innerHTML = `
     <h2 class="h4 mb-3">Фиды</h2>
 
-    ${feeds.map((feed) => `
+    ${feeds.map(feed => `
       <div class="mb-3">
         <h3 class="h6">${feed.title}</h3>
         <p class="text-muted small mb-0">${feed.description}</p>
@@ -119,7 +119,6 @@ const showPostModal = (post, dom) => {
   Modal.getOrCreateInstance(dom.modal).show()
 }
 
-// важно: хранится внутри модуля, чтобы не дергать модалку на каждый rerender
 let previousOpenedPostId = null
 
 const renderView = (state, dom) => {
