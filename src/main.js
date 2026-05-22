@@ -1,6 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap'
 
+import { proxy } from 'valtio/vanilla'
 import onChange from 'on-change'
 
 import renderView from './view.js'
@@ -11,7 +12,7 @@ import { initI18n } from './i18n.js'
 import { initEvents } from './events.js'
 
 const generateId = createIdGenerator()
-const state = createInitialState()
+const state = proxy(createInitialState())
 
 const dom = {
   form: document.querySelector('form'),
