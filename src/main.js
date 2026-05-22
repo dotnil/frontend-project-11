@@ -1,7 +1,6 @@
-import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap'
 
-import onChange from 'on-change'
+import { proxy, subscribe } from 'valtio/vanilla'
 
 import renderView from './view.js'
 import { createHandlers } from './handlers.js'
@@ -11,7 +10,7 @@ import { initI18n } from './i18n.js'
 import { initEvents } from './events.js'
 
 const generateId = createIdGenerator()
-const state = createInitialState()
+const state = proxy(createInitialState())
 
 const dom = {
   form: document.querySelector('form'),
@@ -27,15 +26,17 @@ const dom = {
 
 const initApp = () => {
   initI18n().then(() => {
-    const watchedState = onChange(state, (path, currentValue) => {
-      renderView(path, currentValue, watchedState, dom)
+    subscribe(state, () => {
+      renderView(state, dom)
     })
 
-    const handlers = createHandlers(watchedState, generateId)
+    const handlers = createHandlers(state, generateId)
 
     initEvents(dom, handlers)
 
-    startUpdater(watchedState, generateId)
+    startUpdater(state, generateId)
+
+    renderView(state, dom)
   })
 }
 

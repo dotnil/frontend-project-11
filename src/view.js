@@ -119,39 +119,41 @@ const showPostModal = (post, dom) => {
   Modal.getOrCreateInstance(dom.modal).show()
 }
 
-const renderView = (path, value, state, dom) => {
-  if (path.startsWith('feeds')) {
-    renderFeeds(state.feeds, dom.feedsContainer)
-  }
+let previousOpenedPostId = null
 
-  if (path.startsWith('posts') || path === 'ui.readPostIds') {
-    renderPosts(state.posts, state.ui.readPostIds, dom.postsContainer)
-  }
+const renderView = (state, dom) => {
+  renderFeeds(state.feeds, dom.feedsContainer)
 
-  if (path === 'ui.openedPostId') {
-    const post = state.posts.find(({ id }) => id === value)
+  renderPosts(
+    state.posts,
+    state.ui.readPostIds,
+    dom.postsContainer,
+  )
+
+  if (
+    state.ui.openedPostId !== null
+    && state.ui.openedPostId !== previousOpenedPostId
+  ) {
+    const post = state.posts.find(
+      ({ id }) => id === state.ui.openedPostId,
+    )
 
     if (post) {
       showPostModal(post, dom)
+      previousOpenedPostId = state.ui.openedPostId
     }
   }
 
-  if (path === 'form.status') {
-    if (value === FORM_STATUS.SUCCESS) {
-      renderSuccess(dom)
-    }
-
-    if (value === FORM_STATUS.FAILED) {
-      renderError(state.form.error, dom)
-    }
-
-    if (statusesWithoutFeedback.includes(value)) {
-      clearFeedback(dom)
-    }
+  if (state.form.status === FORM_STATUS.SUCCESS) {
+    renderSuccess(dom)
   }
 
-  if (path === 'form.error') {
-    renderError(value, dom)
+  if (state.form.status === FORM_STATUS.FAILED) {
+    renderError(state.form.error, dom)
+  }
+
+  if (statusesWithoutFeedback.includes(state.form.status)) {
+    clearFeedback(dom)
   }
 }
 
