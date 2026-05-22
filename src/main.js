@@ -2,7 +2,6 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap'
 
 import { proxy, subscribe } from 'valtio/vanilla'
-import onChange from 'on-change'
 
 import renderView from './view.js'
 import { createHandlers } from './handlers.js'
@@ -28,18 +27,17 @@ const dom = {
 
 const initApp = () => {
   initI18n().then(() => {
-    const watchedState = onChange(state, (path, currentValue) => {
-      renderView(path, currentValue, watchedState, dom)
+    subscribe(state, () => {
+      renderView(state, dom)
     })
 
-    subscribe(state, () => {
-      console.log('valtio state changed')
-    })
-    const handlers = createHandlers(watchedState, generateId)
+    const handlers = createHandlers(state, generateId)
 
     initEvents(dom, handlers)
 
-    startUpdater(watchedState, generateId)
+    startUpdater(state, generateId)
+
+    renderView(state, dom)
   })
 }
 
